@@ -1,0 +1,11 @@
+/output_video.mp4
+/yolov5/
+/ultralytics/
+.idea/
+__pycache__/
+venv/
+/runs/detect/train/
+/runs/detect/train2/
+/runs/detect/train3/
+/runs/detect/train4/
+/Lib/
