@@ -22,8 +22,8 @@ np.random.seed(42)
 class CustomYOLOv8Model:
     def __init__(self):
         self.dataset_version = 2
-        self.rf = Roboflow(api_key="AmQ0vHqaiNHr6SeXUAWb")
-        self.dataset_name = "traffic_vision--"
+        self.rf = Roboflow(api_key="rBzIu5I6ccC0pMQqHBlF")
+        self.dataset_name = "traffic-control-project"
 
     # region чтение датасета
     @staticmethod
@@ -47,6 +47,19 @@ class CustomYOLOv8Model:
         with open(data_yaml_path, 'w') as file:
             yaml.dump(data, file)
 
+    def download_datasets_from_roboflow(self):
+        project = self.rf.workspace("traffic-vision-workspace-kb8fc").project("traffic-control-project")
+        version = project.version(2)
+        dataset = version.download("yolov8")
+        return dataset.location
+
+    @staticmethod
+    def delete_exists_folder(folder_path):
+        # Если папка существует, удалить ее
+        if os.path.exists(folder_path):
+            shutil.rmtree(folder_path)
+            print(f'Папка {folder_path} успешно удалена.')
+
     def download_dataset(self):
         """
         Загружает датасет с Roboflow и организует его структуру.
@@ -57,43 +70,24 @@ class CustomYOLOv8Model:
         :return: Нет возвращаемого значения.
         """
 
-        dataset_path = self.dataset_name + str(self.dataset_version)
+        dataset_path = self.dataset_name + "-" + str(self.dataset_version)
+        self.delete_exists_folder(dataset_path)
+        target_folder = os.path.join("yolov5", "datasets", dataset_path)
+        self.delete_exists_folder(target_folder)
 
-        # Если папка существует, удалить ее
-        if os.path.exists(dataset_path):
-            shutil.rmtree(dataset_path)
-            print(f'Папка {dataset_path} успешно удалена.')
-
-        target_folder_tmp = os.path.join("yolov5", "datasets", self.dataset_name + str(self.dataset_version))
-
-        # Если папка существует, удалить ее
-        if os.path.exists(target_folder_tmp):
-            shutil.rmtree(target_folder_tmp)
-            print(f'Папка {target_folder_tmp} успешно удалена.')
-
-        # качаем датасет с Roboflow
-        project = self.rf.workspace("detected").project("traffic_vision")
-        dataset = project.version(self.dataset_version).download("yolov8")
-
+        source_folder = self.download_datasets_from_roboflow()
         data_yaml_path = f"{dataset_path}/data.yaml"
         self._update_data_yaml(data_yaml_path)
 
-        # Путь к исходной папке
-        source_folder = dataset.location
-        dataset_name = f"{dataset.name}-{dataset.version}"
-        # Путь к целевой папке
-        target_folder = os.path.join("yolov5", "datasets", dataset_path)
-        target_folder_tmp = os.path.join("yolov5", "datasets", dataset_path)
-
         # Если папка не существует, создайте ее
-        if not os.path.exists(target_folder_tmp):
-            os.makedirs(target_folder_tmp)
+        if not os.path.exists(target_folder):
+            os.makedirs(target_folder)
 
         # Переместите файлы в целевую папку
         for file_name in os.listdir(source_folder):
             source_file_path = os.path.join(source_folder, file_name)
             target_file_path = os.path.join(target_folder, file_name)
-            print(f"Move file {file_name}")
+            print(f"Перенос файла {file_name}")
             shutil.move(source_file_path, target_file_path)
 
         # Удаляем папку, если она пуста
@@ -103,20 +97,12 @@ class CustomYOLOv8Model:
         except OSError as e:
             print(f'Не удалось удалить папку {dataset_path}: {e}')
 
-        project = self.rf.workspace("detected").project("traffic_vision")
-        dataset = project.version(self.dataset_version).download("yolov8")
-
+        self.download_datasets_from_roboflow()
         self._update_data_yaml(data_yaml_path)
 
     # endregion
 
-    @staticmethod
-    def text_recognition(file_path):
-        reader = Reader(["en", "ru"])
-        result = reader.readtext(file_path, detail=0)
-        return result
-
-    def train_my_model(self, number_epoch):
+    def train_my_model(self, number_epoch=50, image_size=640):
         """
         Обучает модель YOLOv8 на предоставленных данных.
 
@@ -128,8 +114,7 @@ class CustomYOLOv8Model:
 
         name_model = "yolov8n.pt"
         model = YOLO(name_model)
-        model.train(data=f"{self.dataset_name}{self.dataset_version}/data.yaml", epochs=number_epoch, imgsz=640)
-
+        model.train(data=f"{self.dataset_name}-{self.dataset_version}/data.yaml", epochs=number_epoch, imgsz=image_size)
 
     # region варианты предсказания
     def predict_my_model(self, img_path, show_predict=False):
@@ -151,6 +136,14 @@ class CustomYOLOv8Model:
         if show_predict and img_path.find(".jpg"):
             self._plot_results(coordinates, categories, img_path)
         return rez_json_file
+
+    @staticmethod
+    def text_recognition(file_path):
+        reader = Reader(["en", "ru"])
+        result = reader.readtext(file_path, detail=0)
+        return result
+
+    # endregion
 
     @staticmethod
     def process_video_with_tracking(model, input_video_path, show_video=True, save_video=False,
@@ -215,5 +208,3 @@ class CustomYOLOv8Model:
 
         # Close all OpenCV windows
         cv2.destroyAllWindows()
-
-
