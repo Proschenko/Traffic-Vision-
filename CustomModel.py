@@ -24,6 +24,9 @@ class CustomYOLOv8Model:
         self.dataset_version = 2
         self.rf = Roboflow(api_key="rBzIu5I6ccC0pMQqHBlF")
         self.dataset_name = "traffic-control-project"
+        self.women_center_door = (0.14453125, 0.244140625)
+        self.men_center_door = (0.19375, 0.2109375)
+        self.kid_center_door = (0.440625, 0.13046875000000002)
 
     # region чтение датасета
     @staticmethod
@@ -146,7 +149,28 @@ class CustomYOLOv8Model:
     # endregion
 
     @staticmethod
-    def process_video_with_tracking(model, input_video_path, show_video=True, save_video=False,
+    def _process_tracking_results(tracking_results):
+        """
+        Process tracking results to compute the center of each bounding box.
+
+        Parameters:
+        - tracking_results: List of tracking results, where each result contains information about tracked objects.
+
+        Returns:
+        - List of tuples, where each tuple represents the (x, y) coordinates of the center of a bounding box.
+        """
+        centers = []
+
+        for result in tracking_results:
+            if result.boxes.id is not None:  # Check if there is a valid ID
+                box = result.boxes.xyxy.cpu().numpy().astype(int)
+                center_x = (box[0] + box[2]) // 2
+                center_y = (box[1] + box[3]) // 2
+                centers.append((center_x, center_y))
+                print(center_x, center_y)
+        return centers
+
+    def process_video_with_tracking(self, model, input_video_path, show_video=True, save_video=False,
                                     output_video_path="output_video.mp4"):
         # Open the input video file
         cap = cv2.VideoCapture(input_video_path)
@@ -170,6 +194,8 @@ class CustomYOLOv8Model:
                 break
             results = model.track(frame, iou=0.4, conf=0.5, persist=True, imgsz=608, verbose=False,
                                   tracker="botsort.yaml")
+
+            centers = self._process_tracking_results(results)
 
             if results[0].boxes.id != None:  # this will ensure that id is not None -> exist tracks
                 boxes = results[0].boxes.xyxy.cpu().numpy().astype(int)
