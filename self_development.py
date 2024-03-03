@@ -15,13 +15,13 @@ def delete_files_in_folder(folder_path):
 
 my_best_model = "runs/detect/train/weights/best.pt"
 model = YOLO(my_best_model)
-directory = r"D:\я у мамы программист\3 курс 2 семестр IT-проекты\Traffic-Vision-"
-train_images_path = 'Traffic-Control-project-2/train/images'
+directory = r"D:\я у мамы программист\3 курс 2 семестр IT-проекты\self development images"  # Отсюда берем кадры
+train_images_path = 'self development dataset/train/images'  # Сюда складываем
 img_list = os.listdir(directory)
 print(f"В папке имеется {len(img_list)} изображений")
 
-delete_files_in_folder('imgbase/train/images')
-delete_files_in_folder('imgbase/train/labels')
+delete_files_in_folder('self development dataset/train/images')
+delete_files_in_folder('self development dataset/train/labels')
 
 for img_name in img_list:
     img_filepath = directory + "\\" + img_name
@@ -62,7 +62,7 @@ for img_name in img_list:
 
     # записываем файл аннотации в папку базы изображений для импорта
     txt_name = img_name.replace(".png", ".txt")
-    with open(f'imgbase/train/labels/{txt_name}', 'w') as f:
+    with open(f'self development dataset/train/labels/{txt_name}', 'w') as f:
         for line in annot_lines:
             f.write(line)
             f.write('\n')
