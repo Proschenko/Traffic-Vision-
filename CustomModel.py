@@ -3,8 +3,7 @@ import os
 import random
 import shutil
 
-# import matplotlib.patches as patches
-# import matplotlib.pyplot as plt
+import numpy
 import cv2
 import random
 import numpy as np
@@ -27,6 +26,32 @@ class CustomYOLOv8Model:
         self.women_center_door = (0.14453125, 0.244140625)
         self.men_center_door = (0.19375, 0.2109375)
         self.kid_center_door = (0.440625, 0.13046875000000002)
+
+    def get_normalized_door_coordinates(self, center):
+        """
+        Преобразует нормализованные координаты центра в абсолютные координаты для разрешения изображения.
+        """
+        absolute_x = int(center[0] * self.image_width)
+        absolute_y = int(center[1] * self.image_height)
+        return absolute_x, absolute_y
+
+    def get_women_door_coordinates(self):
+        """
+        Возвращает абсолютные координаты центра дверей для женщин.
+        """
+        return self.get_normalized_door_coordinates(self.women_center_door)
+
+    def get_men_door_coordinates(self):
+        """
+        Возвращает абсолютные координаты центра дверей для мужчин.
+        """
+        return self.get_normalized_door_coordinates(self.men_center_door)
+
+    def get_kid_door_coordinates(self):
+        """
+        Возвращает абсолютные координаты центра дверей для детей.
+        """
+        return self.get_normalized_door_coordinates(self.kid_center_door)
 
     # region чтение датасета
     @staticmethod
@@ -116,8 +141,8 @@ class CustomYOLOv8Model:
         """
 
         name_model = "yolov8m.pt"
-        model = YOLO(name_model)
-        model.train(data=f"{self.dataset_name}-{self.dataset_version}/data.yaml", epochs=number_epoch, imgsz=image_size)
+        train_model = YOLO(name_model)
+        train_model.train(data=f"{self.dataset_name}-{self.dataset_version}/data.yaml", epochs=number_epoch, imgsz=image_size)
 
     @staticmethod
     def text_recognition(file_path):
@@ -128,24 +153,31 @@ class CustomYOLOv8Model:
     @staticmethod
     def _process_tracking_results(tracking_results):
         """
-        Process tracking results to compute the center of each bounding box.
+        Process tracking results to compute the class and center of each bounding box.
 
         Parameters:
         - tracking_results: List of tracking results, where each result contains information about tracked objects.
 
         Returns:
-        - List of tuples, where each tuple represents the (x, y) coordinates of the center of a bounding box.
+        - List of tuples, where each tuple represents a tuple (class, center_x, center_y) of a bounding box.
         """
-        centers = []
+        result_objects = []
 
         for result in tracking_results:
             if result.boxes.id is not None:  # Check if there is a valid ID
-                box = result.boxes.xyxy.cpu().numpy().astype(int)
-                center_x = (box[0] + box[2]) // 2
+                box = result.boxes.xyxy.cpu().numpy().astype(int)[0]
+                center_x = (box[2] + box[0]) // 2
                 center_y = (box[1] + box[3]) // 2
-                centers.append((center_x, center_y))
-                print(center_x, center_y)
-        return centers
+                confs = result[0].boxes.conf.tolist()
+                class_object = result[0].boxes.cls.tolist()
+
+                result_objects.append((*class_object, *confs, center_x, center_y))
+
+                # classes = list(map(lambda x: int(x), classes_))
+                # cls_dict = result[0].names
+                # class_names = list(map(lambda x: cls_dict[x], classes))
+                # print(f"{class_names}: {confs}  {center_x}, {center_y}")
+        return result_objects
 
     def process_video_with_tracking(self, model, input_video_path, show_video=True, save_video=False,
                                     output_video_path="output_video.mp4"):
