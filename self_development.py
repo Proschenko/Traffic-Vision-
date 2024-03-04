@@ -62,7 +62,7 @@ for img_name in img_list:
 
     # записываем файл аннотации в папку базы изображений для импорта
     txt_name = img_name.replace(".png", ".txt")
-    with open(f'self development dataset/train/labels/{txt_name}', 'w') as f:
+    with open(f'self development dataset/train2/labels/{txt_name}', 'w') as f:
         for line in annot_lines:
             f.write(line)
             f.write('\n')
