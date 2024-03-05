@@ -1,10 +1,27 @@
 from moviepy.video.io.VideoFileClip import VideoFileClip
+import os
 
 
-def cut_video(input_file, output_file_prefix, duration=120):
+def clean_output_folder():
+    folder_path = r"D:\я у мамы программист\3 курс 2 семестр IT-проекты\Traffic-Vision-\Test video output"
+
+    # Iterate over all files in the directory
+    for filename in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, filename)
+
+        # Check if the current path is a file (not a directory) and delete it
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+            print(f"Deleted file: {file_path}")
+        else:
+            print(f"{file_path} is not a file")
+    print("---Done---")
+
+
+def cut_video(input_file, output_file_prefix, number_video=2, duration=30):
     clip = VideoFileClip(input_file)
 
-    for i in range(2):
+    for i in range(number_video):
         start_time = i * duration
         end_time = (i + 1) * duration
         subclip = clip.subclip(start_time, end_time)
@@ -17,5 +34,5 @@ def cut_video(input_file, output_file_prefix, duration=120):
 if __name__ == "__main__":
     input_video = r"D:\я у мамы программист\3 курс 2 семестр IT-проекты\Traffic-Vision-\Test input video\test.mp4"
     output_prefix = r"D:\я у мамы программист\3 курс 2 семестр IT-проекты\Traffic-Vision-\Test video output\output"
-
-    cut_video(input_video, output_prefix)
+    clean_output_folder()
+    cut_video(input_video, output_prefix, number_video=8)

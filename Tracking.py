@@ -19,16 +19,19 @@ class People:
         """
         Ставим новые нормализованные координаты
         """
-        normalized_coordinates = Tracking.get_normalized_coordinates(coordinates)
-        self.center_x = normalized_coordinates[0]
-        self.center_y = normalized_coordinates[1]
+        self.center_x = coordinates[0]
+        self.center_y = coordinates[1]
 
     # Смотрим насколько близко находится к двери
     def check_how_close_to_door(self):
-        door_centers = [Doors.kid_center_door.value, Doors.women_center_door.value, Doors.men_center_door.value]
+        # door_centers = [Doors.kid_center_door.value, Doors.women_center_door.value, Doors.men_center_door.value]
+        door_centers = [Doors.women_center_door.value]
+
         for door_center in door_centers:
-            distance_to_door = (self.center_x - door_center[0]) ** 2 + (self.center_y - door_center[1]) ** 2
-            if distance_to_door < 10:
+            print("People", self.center_x, self.center_y, "Doors", door_center[0], door_center[1])
+            distance_to_door = numpy.sqrt((self.center_x - door_center[0]) ** 2 + (self.center_y - door_center[1]) ** 2)
+            print(distance_to_door)
+            if distance_to_door < 50:
                 self.print_person()
                 return
         # print("Not close enough")
@@ -185,9 +188,9 @@ class Tracking:
                 center_y = (box[1] + box[3]) // 2
                 confs = result[0].boxes.conf.tolist()
                 class_object = result[0].boxes.cls.tolist()
-
+                # print(int(class_object[0]), (center_x, center_y), confs[0])
                 # Create a People object and append it to the list
-                person = People(class_object[0], (center_x, center_y), confs[0])
+                person = People(int(class_object[0]), (center_x, center_y), confs[0])
                 result_objects.append(person)
 
         return result_objects
