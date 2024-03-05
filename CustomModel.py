@@ -1,7 +1,7 @@
 import os
+import random
 import shutil
 
-import random
 import numpy as np
 import torch
 import yaml
@@ -42,6 +42,12 @@ class CustomYOLOv8Model:
             yaml.dump(data, file)
 
     def _download_datasets_from_roboflow(self):
+        """
+        Загружает датасет с Roboflow
+
+        :return: путь к датасету
+        :rtype: str
+        """
         project = self.rf.workspace("traffic-vision-workspace-kb8fc").project("traffic-control-project")
         version = project.version(self.dataset_version)
         dataset = version.download("yolov8")
@@ -49,7 +55,12 @@ class CustomYOLOv8Model:
 
     @staticmethod
     def _delete_exists_folder(folder_path):
-        # Если папка существует, удалить ее
+        """
+        Удаляет папку, если она существует
+
+        :param folder_path: Путь к папке
+        :type folder_path: str
+        """
         if os.path.exists(folder_path):
             shutil.rmtree(folder_path)
             print(f'Папка {folder_path} успешно удалена.')
