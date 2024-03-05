@@ -1,17 +1,18 @@
 import cv2
 import random
 import enum
-import math
+import numpy
+
 
 class People:
     def __init__(self, class_person, coordinates, conf) -> None:
 
-        self.model_class: str = class_person # если циферками класс задается то можно в случае чего преобразовывать в строку 
+        self.model_class: str = class_person  # если циферками класс задается то можно в случае чего преобразовывать в строку
         self.confidence: float = conf
-        
+
         self.center_x: int = None
         self.center_y: int = None
-        
+
         self.set_coordinates(coordinates)
 
     def set_coordinates(self, coordinates):
@@ -21,43 +22,44 @@ class People:
         normalized_coordinates = Tracking.get_normalized_coordinates(coordinates)
         self.center_x = normalized_coordinates[0]
         self.center_y = normalized_coordinates[1]
-        
+
     # Смотрим насколько близко находится к двери
     def check_how_close_to_door(self):
         door_centers = [Doors.kid_center_door.value, Doors.women_center_door.value, Doors.men_center_door.value]
         for door_center in door_centers:
-            distance_to_door = (self.center_x - door_center[0])**2 + (self.center_y - door_center[1])**2
+            distance_to_door = (self.center_x - door_center[0]) ** 2 + (self.center_y - door_center[1]) ** 2
             if distance_to_door < 10:
                 self.print_person()
                 return
-        #print("Not close enough")
-        
-    #Обновление структуры, новые координаты, новая уверенность в себе(в точности предсказания), сразу проверяем насколько близко к двери
+        # print("Not close enough")
+
+    # Обновление структуры, новые координаты, новая уверенность в себе(в точности предсказания), сразу проверяем насколько близко к двери
     def update(self, coordinates, conf):
         self.confidence = conf
         self.set_coordinates(coordinates)
         self.check_how_close_to_door()
 
-    #Выводит всю инфу
+    # Выводит всю инфу
     def print_person(self):
         print("Class:", self.model_class)
         print("Confidence:", self.confidence)
         print("X:", self.center_x)
         print("Y:", self.center_y)
 
+
 class Doors(enum.Enum):
     women_center_door = (185, 175)
     men_center_door = (248, 151)
     kid_center_door = (564, 93)
-    
+
+
 # class Door:
 #     def __init__(self) -> None:
 #         self.women_center_door = (0.14453125, 0.244140625)
 #         self.men_center_door = (0.19375, 0.2109375)
 #         self.kid_center_door = (0.440625, 0.13046875000000002)
-    
 
-        
+
 #     def get_women_door_coordinates(self):
 #         """
 #         Возвращает абсолютные координаты центра дверей для женщин.
@@ -75,25 +77,23 @@ class Doors(enum.Enum):
 #         Возвращает абсолютные координаты центра дверей для детей.
 #         """
 #         return Tracking.get_normalized_coordinates(self.kid_center_door)
-    
-    
-    
+
 
 class Tracking:
     def __init__(self) -> None:
         pass
-    
+
     @staticmethod
     def get_normalized_coordinates(center):
         """
         Преобразует нормализованные координаты центра в абсолютные координаты для разрешения изображения.
         """
-        image_width = 1280
-        image_height = 720
+        image_width = 1920
+        image_height = 1080
         absolute_x = int(center[0] * image_width)
         absolute_y = int(center[1] * image_height)
         return absolute_x, absolute_y
-    
+
     def process_video_with_tracking(self, model, input_video_path, show_video=True, save_video=False,
                                     output_video_path="output_video.mp4"):
         # Open the input video file
@@ -158,7 +158,7 @@ class Tracking:
 
         # Close all OpenCV windows
         cv2.destroyAllWindows()
-    
+
     @staticmethod
     def _process_tracking_results(tracking_results):
         """
@@ -187,9 +187,8 @@ class Tracking:
                 # class_names = list(map(lambda x: cls_dict[x], classes))
                 # print(f"{class_names}: {confs}  {center_x}, {center_y}")
         return result_objects
-        
+
 
 if __name__ == "__main__":
-    
-    a = People("kid", (0.44,0.13), 0.952134)
+    a = People("kid", (0.44, 0.13), 0.952134)
     a.check_how_close_to_door()

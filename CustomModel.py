@@ -1,15 +1,10 @@
-import json
 import os
-import random
 import shutil
 
-import numpy
-import cv2
 import random
 import numpy as np
 import torch
 import yaml
-from easyocr import Reader
 from roboflow import Roboflow
 from ultralytics import YOLO
 
@@ -23,35 +18,6 @@ class CustomYOLOv8Model:
         self.dataset_version = 3
         self.rf = Roboflow(api_key="rBzIu5I6ccC0pMQqHBlF")
         self.dataset_name = "traffic-control-project"
-        self.women_center_door = (0.14453125, 0.244140625)
-        self.men_center_door = (0.19375, 0.2109375)
-        self.kid_center_door = (0.440625, 0.13046875000000002)
-
-    def get_normalized_door_coordinates(self, center):
-        """
-        Преобразует нормализованные координаты центра в абсолютные координаты для разрешения изображения.
-        """
-        absolute_x = int(center[0] * self.image_width)
-        absolute_y = int(center[1] * self.image_height)
-        return absolute_x, absolute_y
-
-    def get_women_door_coordinates(self):
-        """
-        Возвращает абсолютные координаты центра дверей для женщин.
-        """
-        return self.get_normalized_door_coordinates(self.women_center_door)
-
-    def get_men_door_coordinates(self):
-        """
-        Возвращает абсолютные координаты центра дверей для мужчин.
-        """
-        return self.get_normalized_door_coordinates(self.men_center_door)
-
-    def get_kid_door_coordinates(self):
-        """
-        Возвращает абсолютные координаты центра дверей для детей.
-        """
-        return self.get_normalized_door_coordinates(self.kid_center_door)
 
     # region чтение датасета
     @staticmethod
@@ -142,104 +108,5 @@ class CustomYOLOv8Model:
 
         name_model = "yolov8m.pt"
         train_model = YOLO(name_model)
-        train_model.train(data=f"{self.dataset_name}-{self.dataset_version}/data.yaml", epochs=number_epoch, imgsz=image_size)
-
-    @staticmethod
-    def text_recognition(file_path):
-        reader = Reader(["en", "ru"])
-        result = reader.readtext(file_path, detail=0)
-        return result
-
-    @staticmethod
-    def _process_tracking_results(tracking_results):
-        """
-        Process tracking results to compute the class and center of each bounding box.
-
-        Parameters:
-        - tracking_results: List of tracking results, where each result contains information about tracked objects.
-
-        Returns:
-        - List of tuples, where each tuple represents a tuple (class, center_x, center_y) of a bounding box.
-        """
-        result_objects = []
-
-        for result in tracking_results:
-            if result.boxes.id is not None:  # Check if there is a valid ID
-                box = result.boxes.xyxy.cpu().numpy().astype(int)[0]
-                center_x = (box[2] + box[0]) // 2
-                center_y = (box[1] + box[3]) // 2
-                confs = result[0].boxes.conf.tolist()
-                class_object = result[0].boxes.cls.tolist()
-
-                result_objects.append((*class_object, *confs, center_x, center_y))
-
-                # classes = list(map(lambda x: int(x), classes_))
-                # cls_dict = result[0].names
-                # class_names = list(map(lambda x: cls_dict[x], classes))
-                # print(f"{class_names}: {confs}  {center_x}, {center_y}")
-        return result_objects
-
-    def process_video_with_tracking(self, model, input_video_path, show_video=True, save_video=False,
-                                    output_video_path="output_video.mp4"):
-        # Open the input video file
-        cap = cv2.VideoCapture(input_video_path)
-
-        if not cap.isOpened():
-            raise Exception("Error: Could not open video file.")
-
-        # Get inaput video frame rate and dimensions
-        fps = int(cap.get(cv2.CAP_PROP_FPS))
-        frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-        # Define the output video writer
-        if save_video:
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
-
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
-            results = model.track(frame, iou=0.4, conf=0.5, persist=True, imgsz=608, verbose=False,
-                                  tracker="botsort.yaml")
-
-            centers = self._process_tracking_results(results)
-
-            if results[0].boxes.id != None:  # this will ensure that id is not None -> exist tracks
-                boxes = results[0].boxes.xyxy.cpu().numpy().astype(int)
-                ids = results[0].boxes.id.cpu().numpy().astype(int)
-
-                for box, id in zip(boxes, ids):
-                    # Generate a random color for each object based on its ID
-                    random.seed(int(id))
-                    color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-
-                    cv2.rectangle(frame, (box[0], box[1]), (box[2], box[3],), color, 2)
-                    cv2.putText(
-                        frame,
-                        f"Id {id}",
-                        (box[0], box[1]),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5,
-                        (0, 255, 255),
-                        2,
-                    )
-
-            if save_video:
-                out.write(frame)
-
-            if show_video:
-                frame = cv2.resize(frame, (0, 0), fx=0.75, fy=0.75)
-                cv2.imshow("frame", frame)
-
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                break
-
-        # Release the input video capture and output video writer
-        cap.release()
-        if save_video:
-            out.release()
-
-        # Close all OpenCV windows
-        cv2.destroyAllWindows()
+        train_model.train(data=f"{self.dataset_name}-{self.dataset_version}/data.yaml",
+                          epochs=number_epoch, imgsz=image_size)
