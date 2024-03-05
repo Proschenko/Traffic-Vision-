@@ -13,9 +13,9 @@ class People:
         self.center_x: int = None
         self.center_y: int = None
 
-        self.set_coordinates(coordinates)
+        self._set_coordinates(coordinates)
 
-    def set_coordinates(self, coordinates):
+    def _set_coordinates(self, coordinates):
         """
         Ставим новые нормализованные координаты
         """
@@ -36,7 +36,7 @@ class People:
     # Обновление структуры, новые координаты, новая уверенность в себе(в точности предсказания), сразу проверяем насколько близко к двери
     def update(self, coordinates, conf):
         self.confidence = conf
-        self.set_coordinates(coordinates)
+        self._set_coordinates(coordinates)
         self.check_how_close_to_door()
 
     # Выводит всю инфу
@@ -119,7 +119,7 @@ class Tracking:
             results = model.track(frame, iou=0.4, conf=0.5, persist=True, imgsz=608, verbose=False,
                                   tracker="botsort.yaml")
 
-            centers = self._process_tracking_results(results)
+            self._tracking(results)
 
             if results[0].boxes.id != None:  # this will ensure that id is not None -> exist tracks
                 boxes = results[0].boxes.xyxy.cpu().numpy().astype(int)
@@ -159,16 +159,22 @@ class Tracking:
         # Close all OpenCV windows
         cv2.destroyAllWindows()
 
+    def _tracking(self, results):
+        people_objects = self._process_tracking_results(results)
+
+        for person in people_objects:
+            person.check_how_close_to_door()
+
     @staticmethod
     def _process_tracking_results(tracking_results):
         """
-        Process tracking results to compute the class and center of each bounding box.
+        Process tracking results to compute the class, confidence score, and center of each bounding box.
 
         Parameters:
         - tracking_results: List of tracking results, where each result contains information about tracked objects.
 
         Returns:
-        - List of tuples, where each tuple represents a tuple (class, center_x, center_y) of a bounding box.
+        - List of People objects, where each object represents a person with their class, confidence score, and center coordinates.
         """
         result_objects = []
 
@@ -180,12 +186,10 @@ class Tracking:
                 confs = result[0].boxes.conf.tolist()
                 class_object = result[0].boxes.cls.tolist()
 
-                result_objects.append((*class_object, *confs, center_x, center_y))
+                # Create a People object and append it to the list
+                person = People(class_object[0], (center_x, center_y), confs[0])
+                result_objects.append(person)
 
-                # classes = list(map(lambda x: int(x), classes_))
-                # cls_dict = result[0].names
-                # class_names = list(map(lambda x: cls_dict[x], classes))
-                # print(f"{class_names}: {confs}  {center_x}, {center_y}")
         return result_objects
 
 
