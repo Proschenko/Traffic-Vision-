@@ -5,6 +5,7 @@ from ultralytics.engine.results import Results
 from OperationsWithCordinates import OperationsWithCoordinates
 
 from People import People
+from Doors import Doors
 
 
 class Tracking:
@@ -32,9 +33,12 @@ class Tracking:
 
             if show_video:
                 frame = cv2.resize(results.plot(), (0, 0), fx=0.75, fy=0.75)
+                self.line_door_person(frame, results, coef=0.75)
                 cv2.imshow("frame", frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
+
+            
 
             self._tracking(results)
 
@@ -66,6 +70,28 @@ class Tracking:
         for box, center in zip(boxes, centers):
             people.append(People(int(*box.cls), center, *box.conf))
         return people
+
+    def line_door_person(self, frame: np.ndarray , results: Results, coef: float = 1) -> None:
+        """
+        Рисует линии от человека к 3м дверям, обращаясь к координатам из enum Doors
+
+        :param frame: Кадр из записи для обработки
+        :type frame: np.ndarray
+        :param results: Результат обнаружения объектов
+        :type results: Results
+        :param coef: Коэффициент масштабирования изображения
+        :type coef: float
+        :return: Ничего
+        :rtype: None
+        """
+        people_objects = self.parse_results(results)
+        doors = (Doors.men_center_door.value, Doors.women_center_door.value, Doors.kid_center_door.value)
+        for person in people_objects:
+            for door in doors:
+                cv2.line(frame, (int(person.center_x*coef), int(person.center_y*coef)),
+                        (int(door[0]*coef), int(door[1]*coef)), (102, 255, 51), 5)
+
+
 
 
 if __name__ == "__main__":
