@@ -42,8 +42,8 @@ class People:
         door_centers = [Doors.kid_center_door.value, Doors.women_center_door.value, Doors.men_center_door.value]
         for door_center in door_centers:
             distance_to_door = (self.center_x - door_center[0]) ** 2 + (self.center_y - door_center[1]) ** 2
-            self.print_person()
             if distance_to_door < 10:
+                self.print_person()
                 return
         # print("Not close enough")
 
