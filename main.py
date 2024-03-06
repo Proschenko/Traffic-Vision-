@@ -11,7 +11,7 @@ def main():
     tracking = Tracking()
     model = YOLO('runs/detect/train2/weights/best.pt')
     model.fuse()
-    input_video = r"D:\я у мамы программист\3 курс 2 семестр IT-проекты\Traffic-Vision-\Test video output\output_8.mp4"
+    input_video = r"test.mp4"
 
     tracking.process_video_with_tracking(model, input_video, show_video=True)
 
