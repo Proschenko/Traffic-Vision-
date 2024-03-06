@@ -84,6 +84,9 @@ class Tracking:
         for door in Doors:
             x, y = door.center
             r = 10
+            pt1 = door.corners[:2]
+            pt2 = door.corners[2:]
+            cv2.rectangle(frame, pt1, pt2, color=(0, 0, 255))
             cv2.circle(frame, (x, y), radius=r, color=(0, 0, 255), 
                             thickness=-1)
             cv2.putText(frame, door.name[0], org=(x-r, y-r*2), 
