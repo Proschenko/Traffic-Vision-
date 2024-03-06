@@ -168,6 +168,34 @@ class Tracking:
         return people
 
 
+    @staticmethod
+    def _process_tracking_results(tracking_results):
+        """
+        Process tracking results to compute the class, confidence score, and center of each bounding box.
+
+        Parameters:
+        - tracking_results: List of tracking results, where each result contains information about tracked objects.
+
+        Returns:
+        - List of People objects, where each object represents a person with their class, confidence score, and center coordinates.
+        """
+        result_objects = []
+
+        for result in tracking_results:
+            if result.boxes.id is not None:  # Check if there is a valid ID
+                box = result.boxes.xyxy.cpu().numpy().astype(int)[0]
+                center_x = (box[2] + box[0]) // 2
+                center_y = (box[1] + box[3]) // 2
+                confs = result[0].boxes.conf.tolist()
+                class_object = result[0].boxes.cls.tolist()
+                # print(int(class_object[0]), (center_x, center_y), confs[0])
+                # Create a People object and append it to the list
+                person = People(int(class_object[0]), (center_x, center_y), confs[0])
+                result_objects.append(person)
+
+        return result_objects
+
+
 if __name__ == "__main__":
     a = People("kid", (0.44, 0.13), 0.952134)
     a.check_how_close_to_door()
