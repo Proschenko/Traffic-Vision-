@@ -3,8 +3,8 @@ import numpy as np
 from cv2.typing import MatLike
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
+from OperationsWithCordinates import boxes_center
 
-from OperationsWithCordinates import OperationsWithCoordinates
 from People import People
 from Doors import Doors
 
@@ -63,7 +63,7 @@ class Tracking:
         if results.boxes.id is None:
             return list()
         boxes = results.boxes.numpy()
-        centers = OperationsWithCoordinates.boxes_center(boxes.xyxy)
+        centers = boxes_center(boxes.xyxy)
         people = list()
         for box, center in zip(boxes, centers):
             people.append(People(int(*box.cls), center, *box.conf))
@@ -82,7 +82,7 @@ class Tracking:
     
     def draw_doors(self, frame: MatLike):
         for door in Doors:
-            x, y = door.value
+            x, y = door.center
             r = 10
             cv2.circle(frame, (x, y), radius=r, color=(0, 0, 255), 
                             thickness=-1)
@@ -105,9 +105,8 @@ class Tracking:
         :rtype: None
         """
         people_objects = self.parse_results(results)
-        doors = (Doors.men_center_door.value, Doors.women_center_door.value, Doors.kid_center_door.value)
         for person in people_objects:
-            for door in doors:
+            for door in Doors.centers:
                 cv2.line(frame, (int(person.center_x*coef), int(person.center_y*coef)),
                         (int(door[0]*coef), int(door[1]*coef)), (102, 255, 51), 5)
 

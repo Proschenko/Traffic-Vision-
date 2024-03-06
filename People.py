@@ -28,7 +28,7 @@ class People:
         :return:
         """
         # door_centers = [Doors.kid_center_door.value, Doors.women_center_door.value, Doors.men_center_door.value]
-        door_centers = [Doors.men_center_door.value]
+        door_centers = Doors.centers
 
         for door_center in door_centers:
             print("People", self.center_x, self.center_y, "Doors", door_center[0], door_center[1])
