@@ -1,8 +1,22 @@
-import cv2
-import random
 import enum
-import numpy
+import random
 
+import cv2
+import numpy
+import numpy as np
+from ultralytics.engine.results import Results
+
+
+def boxes_center(corners: np.ndarray[float, float]) -> np.ndarray[float, float]:
+    """
+    Находит центры прямоугольников, которые заданны двумя углами.
+
+    :param corners: Массив координат размера (n, 4) формата xyxy
+    :type corners: np.ndarray[float, float]
+    :return: Массив координат размера (n, 2) формата xy
+    :rtype: np.ndarray[float, float]
+    """
+    return np.mean(corners.reshape((-1, 2, 2)), 1)
 
 class People:
     def __init__(self, class_person, coordinates, conf) -> None:
@@ -28,8 +42,8 @@ class People:
         door_centers = [Doors.kid_center_door.value, Doors.women_center_door.value, Doors.men_center_door.value]
         for door_center in door_centers:
             distance_to_door = (self.center_x - door_center[0]) ** 2 + (self.center_y - door_center[1]) ** 2
+            self.print_person()
             if distance_to_door < 10:
-                self.print_person()
                 return
         # print("Not close enough")
 
@@ -160,10 +174,29 @@ class Tracking:
         cv2.destroyAllWindows()
 
     def _tracking(self, results):
-        people_objects = self._process_tracking_results(results)
+        assert len(results) == 1
+        people_objects = self.parse_results(results[0])
 
         for person in people_objects:
             person.check_how_close_to_door()
+
+    def parse_results(self, results: Results) -> list[People]:
+        """
+        Создаёт список объектов People на основе result
+
+        :param results: Результат обнаружения объектов
+        :type results: Results
+        :return: Список объектов People
+        :rtype: list[People]
+        """
+        if results.boxes.id is None:
+            return list()
+        boxes = results.boxes.numpy()
+        centers = boxes_center(boxes.xyxy)
+        people = list()
+        for box, center in zip(boxes, centers):
+            people.append(People(int(*box.cls), center, *box.conf))
+        return people
 
     @staticmethod
     def _process_tracking_results(tracking_results):
