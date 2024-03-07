@@ -1,8 +1,9 @@
 import cv2
 import numpy as np
+from cv2.typing import MatLike
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
-from OperationsWithCordinates import OperationsWithCoordinates
+from OperationsWithCordinates import boxes_center
 
 from People import People
 from Doors import Doors
@@ -32,13 +33,10 @@ class Tracking:
                 out.write(results.plot())
 
             if show_video:
-                frame = cv2.resize(results.plot(), (0, 0), fx=0.75, fy=0.75)
-                self.line_door_person(frame, results, coef=0.75)
+                frame = self.draw_debug(results, draw_boxes=False)
                 cv2.imshow("frame", frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
-
-            
 
             self._tracking(results)
 
@@ -65,12 +63,37 @@ class Tracking:
         if results.boxes.id is None:
             return list()
         boxes = results.boxes.numpy()
-        centers = OperationsWithCoordinates.boxes_center(boxes.xyxy)
+        centers = boxes_center(boxes.xyxy)
         people = list()
         for box, center in zip(boxes, centers):
             people.append(People(int(*box.cls), center, *box.conf))
         return people
 
+    def draw_debug(self, results: Results,
+                   draw_boxes=True, draw_doors=True, draw_lines=True) -> MatLike:
+        frame = results.orig_img
+        if draw_boxes:
+            frame = results.plot()
+        if draw_lines:
+            self.line_door_person(frame, results)
+        if draw_doors:
+            self.draw_doors(frame)
+        return cv2.resize(frame, (0, 0), fx=0.75, fy=0.75)
+    
+    def draw_doors(self, frame: MatLike):
+        for door in Doors:
+            x, y = door.center
+            r = 10
+            pt1 = door.corners[:2]
+            pt2 = door.corners[2:]
+            cv2.rectangle(frame, pt1, pt2, color=(0, 0, 255))
+            cv2.circle(frame, (x, y), radius=r, color=(0, 0, 255), 
+                            thickness=-1)
+            cv2.putText(frame, door.name[0], org=(x-r, y-r*2), 
+                                fontFace=cv2.FONT_HERSHEY_SIMPLEX, 
+                                fontScale=1, color=(255, 255, 255),
+                                thickness=2)
+    
     def line_door_person(self, frame: np.ndarray , results: Results, coef: float = 1) -> None:
         """
         Рисует линии от человека к 3м дверям, обращаясь к координатам из enum Doors
@@ -85,9 +108,8 @@ class Tracking:
         :rtype: None
         """
         people_objects = self.parse_results(results)
-        doors = (Doors.men_center_door.value, Doors.women_center_door.value, Doors.kid_center_door.value)
         for person in people_objects:
-            for door in doors:
+            for door in Doors.centers:
                 cv2.line(frame, (int(person.center_x*coef), int(person.center_y*coef)),
                         (int(door[0]*coef), int(door[1]*coef)), (102, 255, 51), 5)
 

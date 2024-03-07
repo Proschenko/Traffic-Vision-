@@ -1,87 +1,85 @@
-import enum
+from dataclasses import dataclass, field
+from typing import Generator
+
 import numpy as np
-from OperationsWithCordinates import OperationsWithCoordinates
 
+from OperationsWithCordinates import boxes_center
 
-class Doors(enum.Enum):
-    women_center_door = (277, 263)
-    men_center_door = (372, 227)
-    kid_center_door = (846, 140)
+corners_path = "doors_corners.txt"
+door_names = ("women", "men", "kid")
 
-    # _old_women_center_door = (277, 263)
-    # _old_men_center_door = (372, 227)
-    # _old_kid_center_door = (846, 140)
+@dataclass(slots=True)
+class Door:
+    name: str
+    corners: np.ndarray[int]
+    center: tuple[int, int] = field(init=False)
+    
+    def __post_init__(self):
+        self.center = np.ravel(boxes_center(self.corners)).astype(int)
 
+class DoorList:
 
-class _Door:
-    def __init__(self, _women_coordinates, _men_coordinates, _kid_coordinates) -> None:
-        self.women_center_door = np.ravel(OperationsWithCoordinates.boxes_center(women_coordinates))
-        self.men_center_door = np.ravel(OperationsWithCoordinates.boxes_center(men_coordinates))
-        self.kid_center_door = np.ravel(OperationsWithCoordinates.boxes_center(kid_coordinates))
+    def __init__(self, doors: list[Door]) -> None:
+        self.doors = doors
+    
+    @classmethod
+    def from_file(cls, path: str):
+        doors = list()
+        with open(path) as file:
+            for row in file.readlines():
+                name, *corners = row.split()
+                corners = np.fromiter(map(int, corners), int)
+                doors.append(Door(name, corners))
+        return cls(doors)
+    
+    def __iter__(self) -> Generator[Door, None, None]:
+        yield from self.doors
+    
+    @property
+    def centers(self) -> tuple[tuple[int, int]]:
+        return tuple(d.center for d in self.doors)
 
-        print(self.women_center_door)
-        print(self.men_center_door)
-        print(self.kid_center_door)
+def update_corners(corners: list[list[float]]):
+    with open(corners_path, 'w') as file:
+        for name, row in zip(door_names, corners):
+            print(name, " ".join(map(str, row)), file=file)
 
-        # Новые координаты
-        # [0.0796875  0.15234375]
-        # [0.1078125  0.14140625]
-        # [0.22734375 0.09765625]
+def corners_from_norm(corners: list[list[float]], 
+                      image_shape: tuple[int, int]) -> np.ndarray[int, int]:
+    corners = np.array(corners)
+    corners[..., (0, 2)] *= image_shape[0]
+    corners[..., (1, 3)] *= image_shape[1]
+    return corners.astype(int)
 
-        # Старые координаты
-        # self.women_center_door = (0.14453125, 0.244140625)
-        # self.men_center_door = (0.19375, 0.2109375)
-        # self.kid_center_door = (0.440625, 0.13046875000000002)
+def corners_from_width_height(data: list[list[int]]) -> np.ndarray[int, int]:
+    data = np.array(data)
+    data[..., 2:] += data[..., :2]
+    return data
 
-    @staticmethod
-    def _get_normalized_coordinates(center):
-        """
-        Преобразует нормализованные координаты центра в абсолютные координаты для разрешения изображения.
-        """
-        if center is None:
-            return None
-
-        image_width = 1920
-        image_height = 1080
-        absolute_x = int(center[0] * image_width)
-        absolute_y = int(center[1] * image_height)
-        return absolute_x, absolute_y
-
-    def get_women_door_coordinates(self):
-        """
-        Возвращает абсолютные координаты центра дверей для женщин.
-        """
-        return self._get_normalized_coordinates(self.women_center_door)
-
-    def get_men_door_coordinates(self):
-        """
-        Возвращает абсолютные координаты центра дверей для мужчин.
-        """
-        return self._get_normalized_coordinates(self.men_center_door)
-
-    def get_kid_door_coordinates(self):
-        """
-        Возвращает абсолютные координаты центра дверей для детей.
-        """
-        return self._get_normalized_coordinates(self.kid_center_door)
+Doors = DoorList.from_file(corners_path)
 
 
 if __name__ == "__main__":
-    # Новые координаты
-    # women_coordinates = np.array([0.11953125, 0.15625, 0.03984375, 0.1484375])
-    # men_coordinates = np.array([0.17421875, 0.1328125, 0.04140625, 0.15])
-    # kid_coordinates = np.array([0.4265625, 0.065625, 0.028125, 0.1296875])
-    # women_coordinates = [0.11953125, 0.15625, 0.03984375, 0.1484375]
-    # men_coordinates = [0.17421875, 0.1328125, 0.04140625, 0.15]
-    # kid_coordinates = [0.4265625, 0.065625, 0.028125, 0.1296875]
+    image_size = 1920, 1080
+    norm = [
+        [0.11953125, 0.15625, 0.03984375, 0.1484375],
+        [0.17421875, 0.1328125, 0.04140625, 0.15],
+        [0.4265625, 0.065625, 0.028125, 0.1296875],
+    ]
+    
+    corners = corners_from_norm(norm, image_size)
+    update_corners(corners)
 
-    # Старые координаты
-    women_coordinates = np.array([0.11953125, 0.15625, 0.03984375, 0.1484375])
-    men_coordinates = np.array([0.17421875, 0.1328125, 0.04140625, 0.15])
-    kid_coordinates = np.array([0.4265625, 0.065625, 0.028125, 0.1296875])
+    width_height = [
+        [175, 67, 108, 208],
+        [283, 38, 105, 206],
+        [785, 0, 63, 149]
+    ]
 
-    door = _Door(women_coordinates, men_coordinates, kid_coordinates)
+    corners = corners_from_width_height(width_height)
+    update_corners(corners)
 
-    print("women_center_door =", door.get_women_door_coordinates())
-    print("men_center_door =", door.get_men_door_coordinates())
-    print("kid_center_door =", door.get_kid_door_coordinates())
+    for d in Doors:
+        print(d)
+    
+    print(Doors.centers)
