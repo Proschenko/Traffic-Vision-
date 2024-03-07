@@ -8,20 +8,22 @@ from OperationsWithCordinates import boxes_center
 corners_path = "doors_corners.txt"
 door_names = ("women", "men", "kid")
 
+
 @dataclass(slots=True)
 class Door:
     name: str
     corners: np.ndarray[int]
     center: tuple[int, int] = field(init=False)
-    
+
     def __post_init__(self):
         self.center = np.ravel(boxes_center(self.corners)).astype(int)
+
 
 class DoorList:
 
     def __init__(self, doors: list[Door]) -> None:
         self.doors = doors
-    
+
     @classmethod
     def from_file(cls, path: str):
         doors = list()
@@ -31,33 +33,36 @@ class DoorList:
                 corners = np.fromiter(map(int, corners), int)
                 doors.append(Door(name, corners))
         return cls(doors)
-    
+
     def __iter__(self) -> Generator[Door, None, None]:
         yield from self.doors
-    
+
     @property
     def centers(self) -> tuple[tuple[int, int]]:
         return tuple(d.center for d in self.doors)
+
 
 def update_corners(corners: list[list[float]]):
     with open(corners_path, 'w') as file:
         for name, row in zip(door_names, corners):
             print(name, " ".join(map(str, row)), file=file)
 
-def corners_from_norm(corners: list[list[float]], 
+
+def corners_from_norm(corners: list[list[float]],
                       image_shape: tuple[int, int]) -> np.ndarray[int, int]:
     corners = np.array(corners)
     corners[..., (0, 2)] *= image_shape[0]
     corners[..., (1, 3)] *= image_shape[1]
     return corners.astype(int)
 
+
 def corners_from_width_height(data: list[list[int]]) -> np.ndarray[int, int]:
     data = np.array(data)
     data[..., 2:] += data[..., :2]
     return data
 
-Doors = DoorList.from_file(corners_path)
 
+Doors = DoorList.from_file(corners_path)
 
 if __name__ == "__main__":
     image_size = 1920, 1080
@@ -66,7 +71,7 @@ if __name__ == "__main__":
         [0.17421875, 0.1328125, 0.04140625, 0.15],
         [0.4265625, 0.065625, 0.028125, 0.1296875],
     ]
-    
+
     corners = corners_from_norm(norm, image_size)
     update_corners(corners)
 
@@ -81,5 +86,5 @@ if __name__ == "__main__":
 
     for d in Doors:
         print(d)
-    
+
     print(Doors.centers)

@@ -62,11 +62,12 @@ class Tracking:
         """
         if results.boxes.id is None:
             return list()
+        ids = results.boxes.id.cpu().numpy().astype(int)
         boxes = results.boxes.numpy()
         centers = boxes_center(boxes.xyxy)
         people = list()
-        for box, center in zip(boxes, centers):
-            people.append(People(int(*box.cls), center, *box.conf))
+        for id_people, box, center in zip(ids, boxes, centers):
+            people.append(People(id_people, int(*box.cls), center, *box.conf))
         return people
 
     def draw_debug(self, results: Results,
@@ -79,22 +80,23 @@ class Tracking:
         if draw_doors:
             self.draw_doors(frame)
         return cv2.resize(frame, (0, 0), fx=0.75, fy=0.75)
-    
-    def draw_doors(self, frame: MatLike):
+
+    @staticmethod
+    def draw_doors(frame: MatLike):
         for door in Doors:
             x, y = door.center
             r = 10
             pt1 = door.corners[:2]
             pt2 = door.corners[2:]
             cv2.rectangle(frame, pt1, pt2, color=(0, 0, 255))
-            cv2.circle(frame, (x, y), radius=r, color=(0, 0, 255), 
-                            thickness=-1)
-            cv2.putText(frame, door.name[0], org=(x-r, y-r*2), 
-                                fontFace=cv2.FONT_HERSHEY_SIMPLEX, 
-                                fontScale=1, color=(255, 255, 255),
-                                thickness=2)
-    
-    def line_door_person(self, frame: np.ndarray , results: Results, coef: float = 1) -> None:
+            cv2.circle(frame, (x, y), radius=r, color=(0, 0, 255),
+                       thickness=-1)
+            cv2.putText(frame, door.name[0], org=(x - r, y - r * 2),
+                        fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                        fontScale=1, color=(255, 255, 255),
+                        thickness=2)
+
+    def line_door_person(self, frame: np.ndarray, results: Results, coef: float = 1) -> None:
         """
         Рисует линии от человека к 3м дверям, обращаясь к координатам из enum Doors
 
@@ -110,12 +112,9 @@ class Tracking:
         people_objects = self.parse_results(results)
         for person in people_objects:
             for door in Doors.centers:
-                cv2.line(frame, (int(person.center_x*coef), int(person.center_y*coef)),
-                        (int(door[0]*coef), int(door[1]*coef)), (102, 255, 51), 5)
-
-
+                cv2.line(frame, (int(person.center_x * coef), int(person.center_y * coef)),
+                         (int(door[0] * coef), int(door[1] * coef)), (102, 255, 51), 5)
 
 
 if __name__ == "__main__":
-    a = People("kid", (0.44, 0.13), 0.952134)
-    a.check_how_close_to_door()
+    pass

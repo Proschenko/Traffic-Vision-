@@ -4,8 +4,8 @@ from Doors import Doors
 
 
 class People:
-    def __init__(self, class_person, coordinates, conf) -> None:
-
+    def __init__(self, id_person, class_person, coordinates, conf) -> None:
+        self.id_person: int = id_person
         self.model_class: str = class_person  # Eсли циферками класс задается то можно в случае чего преобразовывать
         # в строку
         self.confidence: float = conf
@@ -31,15 +31,16 @@ class People:
         door_centers = Doors.centers
 
         for door_center in door_centers:
-            print("People", self.center_x, self.center_y, "Doors", door_center[0], door_center[1])
+            # print("People", self.center_x, self.center_y, "Doors", door_center[0], door_center[1])
             distance_to_door = numpy.sqrt((self.center_x - door_center[0]) ** 2 + (self.center_y - door_center[1]) ** 2)
-            print(distance_to_door)
-            if distance_to_door < 50:
+            if distance_to_door < 20:
+                print(distance_to_door)
                 self.print_person()
                 return
         # print("Not close enough")
 
-    # Обновление структуры, новые координаты, новая уверенность в себе(в точности предсказания), сразу проверяем насколько близко к двери
+    # Обновление структуры, новые координаты, новая уверенность в себе(в точности предсказания), сразу проверяем
+    # насколько близко к двери
     def update(self, coordinates, conf):
         self.confidence = conf
         self._set_coordinates(coordinates)
@@ -47,6 +48,7 @@ class People:
 
     # Выводит всю инфу
     def print_person(self):
+        print("ID:", self.id_person)
         print("Class:", self.model_class)
         print("Confidence:", self.confidence)
         print("X:", self.center_x)

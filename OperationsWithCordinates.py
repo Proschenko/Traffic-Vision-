@@ -11,9 +11,3 @@ def boxes_center(corners: np.ndarray[float, float]) -> np.ndarray[float, float]:
     :rtype: np.ndarray[float, float]
     """
     return np.mean(corners.reshape((-1, 2, 2)), 1)
-
-    # @staticmethod
-    # def xxx(coordinate):
-    #     mean_x = (coordinate[0] + coordinate[2]) / 2
-    #     mean_y = (coordinate[1] + coordinate[3]) / 2
-    #     return mean_x, mean_y
