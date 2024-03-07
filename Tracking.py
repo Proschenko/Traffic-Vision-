@@ -23,7 +23,7 @@ class Tracking:
                       "tracker": "botsort.yaml",
                       "vid_stride": 3}
 
-        for results in model.track(video_path, stream=True, **model_args):
+        for frame_number, results in enumerate(model.track(video_path, stream=True, **model_args)):
             if save_video:
                 if out is None:
                     fps = 25
@@ -48,7 +48,13 @@ class Tracking:
         people_objects = self.parse_results(results)
 
         for person in people_objects:
-            person.check_how_close_to_door()
+            self.people_leave(person)
+
+    def people_leave(self, person: People):
+        location_person = person.check_how_close_to_door()
+        if location_person == 1:
+            pass
+
 
     @staticmethod
     def parse_results(results: Results) -> list[People]:
@@ -70,6 +76,7 @@ class Tracking:
             people.append(People(id_people, int(*box.cls), center, *box.conf))
         return people
 
+    # region Интерактивное отображение дверей и векторов
     def draw_debug(self, results: Results,
                    draw_boxes=True, draw_doors=True, draw_lines=True) -> MatLike:
         frame = results.orig_img
@@ -114,6 +121,8 @@ class Tracking:
             for door in Doors.centers:
                 cv2.line(frame, (int(person.center_x * coef), int(person.center_y * coef)),
                          (int(door[0] * coef), int(door[1] * coef)), (102, 255, 51), 5)
+
+    # endregion
 
 
 if __name__ == "__main__":
