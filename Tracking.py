@@ -58,11 +58,9 @@ class Tracking:
         people_objects = self.parse_results(results)
 
         for person in people_objects:
-            self.id_current = max(self.id_current, person.id_person)  # смотрим максимальный айди
             code = person.check_how_close_to_door()  # сохраняем код с функции
-            if self.check_id_exists(person):  # чисто проверка работы функции
-                print("something")
             self.door_touch(person, code)  # смотрим если человек вошёл в дверь
+            self.id_current = max(self.id_current, person.id_person)  # смотрим максимальный айди
 
     @staticmethod
     def parse_results(results: Results) -> list[People]:
@@ -155,7 +153,7 @@ class Tracking:
         :return: Ничего
         :rtype: None
         """
-        if code != 2:
+        if code != 2 or self.check_id_exists(People):
             return
         print("Человек вошёл в дверь")
         person.print_person()
