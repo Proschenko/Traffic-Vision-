@@ -32,13 +32,14 @@ class People:
         :rtype: int
         """
         door_centers = Doors.centers
-
+        # print(door_centers)
         for door_center in door_centers:
             distance_to_door = numpy.sqrt((self.center_x - door_center[0]) ** 2 + (self.center_y - door_center[1]) ** 2)
+            # print(distance_to_door, door_center, (self.center_x, self.center_y))
             if distance_to_door < 20:
                 # self.print_person()
                 return 2  # Человек находится в пределах дверной рамы
-            if distance_to_door < 100:
+            elif distance_to_door < 100:
                 return 1  # Человек находится около дверной рамы
-            else:
-                return 0  # Человек находится далеко от дверной рамы
+
+        return 0  # Человек находится далеко от дверной рамы

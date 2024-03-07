@@ -18,7 +18,11 @@ class Tracking:
     def people_leave(self, person: People):
         location_person = person.check_how_close_to_door()
         if location_person == 1:
-            pass
+            print("Человек находится рядом с дверной рамой")
+        elif location_person == 2:
+            print("Человек находится внутри дверной раме")
+        else:
+            print("Человек находится далеко от двери")
 
     def process_video_with_tracking(self, model: YOLO, video_path: str, show_video=True, save_path=None):
         save_video = save_path is not None
