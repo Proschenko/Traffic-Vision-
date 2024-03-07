@@ -13,7 +13,7 @@ class Tracking:
     def __init__(self) -> None:
         self.image_width = 1920
         self.image_height = 1080
-        self.id_current = 0
+        self.id_state = dict()
 
     def people_leave(self, person: People):
         location_person = person.check_how_close_to_door()
@@ -58,9 +58,10 @@ class Tracking:
         people_objects = self.parse_results(results)
 
         for person in people_objects:
+            if not self.id_state.get(person.get_person_id()):
+                self.id_state[person.get_person_id()] = False
             code = person.check_how_close_to_door()  # сохраняем код с функции
             self.door_touch(person, code)  # смотрим если человек вошёл в дверь
-            self.id_current = max(self.id_current, person.id_person)  # смотрим максимальный айди
 
     @staticmethod
     def parse_results(results: Results) -> list[People]:
@@ -130,18 +131,6 @@ class Tracking:
 
     # endregion
 
-    def check_id_exists(self, person: People) -> bool:
-        """
-        Проверяет существовал ли id или нет
-
-        :param person: Человек и его данные
-        :type person: People
-        :return: Да или нет, был или не был такой человек
-        :rtype: bool  
-        """
-        return person.id_person <= self.id_current
-
-    # reconsider name of the function
     def door_touch(self, person: People, code: int) -> None:
         """
         Выводит в консоль сообщение о том что человек вошёл в дверь, информацию о человеке
@@ -152,8 +141,9 @@ class Tracking:
         :return: Ничего
         :rtype: None
         """
-        if code != 2 or self.check_id_exists(person):
+        if code != 2 or self.id_state[person.get_person_id()]:
             return
+        self.id_state[person.get_person_id()] = True
         print("Человек вошёл в дверь")
         person.print_person()
 

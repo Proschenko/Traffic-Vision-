@@ -13,6 +13,9 @@ class People:
         self.center_x: int = coordinates[0]
         self.center_y: int = coordinates[1]
 
+    def get_person_id(self):
+        return self.id_person
+
     def print_person(self):
         """
         Выводит всю информацию о человеке
