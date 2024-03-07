@@ -13,6 +13,12 @@ class Tracking:
     def __init__(self) -> None:
         self.image_width = 1920
         self.image_height = 1080
+        self.id_current = 0
+
+    def people_leave(self, person: People):
+        location_person = person.check_how_close_to_door()
+        if location_person == 1:
+            pass
 
     def process_video_with_tracking(self, model: YOLO, video_path: str, show_video=True, save_path=None):
         save_video = save_path is not None
@@ -48,13 +54,11 @@ class Tracking:
         people_objects = self.parse_results(results)
 
         for person in people_objects:
-            self.people_leave(person)
-
-    def people_leave(self, person: People):
-        location_person = person.check_how_close_to_door()
-        if location_person == 1:
-            pass
-
+            self.id_current = max(self.id_current, person.id_person)  # смотрим максимальный айди
+            code = person.check_how_close_to_door()  # сохраняем код с функции
+            if self.check_id_exists(person):  # чисто проверка работы функции
+                print("something")
+            self.door_touch(person, code)  # смотрим если человек вошёл в дверь
 
     @staticmethod
     def parse_results(results: Results) -> list[People]:
@@ -123,6 +127,34 @@ class Tracking:
                          (int(door[0] * coef), int(door[1] * coef)), (102, 255, 51), 5)
 
     # endregion
+
+    def check_id_exists(self, person: People) -> bool:
+        """
+        Проверяет существовал ли id или нет
+
+        :param person: Человек и его данные
+        :type person: People
+        :return: Да или нет, был или не был такой человек
+        :rtype: bool  
+        """
+        return person.id_person <= self.id_current
+
+    # reconsider name of the function
+    @staticmethod
+    def door_touch(person: People, code: int) -> None:
+        """
+        Выводит в консоль сообщение о том что человек вошёл в дверь, информацию о человеке
+        :param person: Человек и его данные
+        :type person: People
+        :param code: код, возвращаемый People.check_how_close_to_door
+        :type code: int
+        :return: Ничего
+        :rtype: None
+        """
+        if code != 2:
+            return
+        print("Человек вошёл в дверь")
+        person.print_person()
 
 
 if __name__ == "__main__":
