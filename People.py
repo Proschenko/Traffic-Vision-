@@ -24,10 +24,12 @@ class People:
         print("X:", self.center_x)
         print("Y:", self.center_y)
 
-    def check_how_close_to_door(self):
+    def check_how_close_to_door(self) -> int:
         """
         Смотрим насколько близко находится к двери
-        :return:
+        :return: Возвращаем код, который означает как далеко человек находится от двери 
+            0 - далеко; 1 - около дверной рамы; 2 - в пределах дверной рамы.
+        :rtype: int
         """
         door_centers = Doors.centers
 
