@@ -142,8 +142,7 @@ class Tracking:
         return person.id_person <= self.id_current
 
     # reconsider name of the function
-    @staticmethod
-    def door_touch(person: People, code: int) -> None:
+    def door_touch(self, person: People, code: int) -> None:
         """
         Выводит в консоль сообщение о том что человек вошёл в дверь, информацию о человеке
         :param person: Человек и его данные
@@ -153,7 +152,7 @@ class Tracking:
         :return: Ничего
         :rtype: None
         """
-        if code != 2 or self.check_id_exists(People):
+        if code != 2 or self.check_id_exists(person):
             return
         print("Человек вошёл в дверь")
         person.print_person()
