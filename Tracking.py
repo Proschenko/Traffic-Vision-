@@ -15,15 +15,6 @@ class Tracking:
         self.image_height = 1080
         self.id_state = dict()
 
-    def people_leave(self, person: People):
-        location_person = person.check_how_close_to_door()
-        if location_person == 1:
-            print("Человек находится рядом с дверной рамой")
-        elif location_person == 2:
-            print("Человек находится внутри дверной раме")
-        else:
-            print("Человек находится далеко от двери")
-
     def process_video_with_tracking(self, model: YOLO, video_path: str, show_video=True, save_path=None):
         save_video = save_path is not None
         out = None
@@ -31,7 +22,7 @@ class Tracking:
         model_args = {"iou": 0.4, "conf": 0.5, "persist": True,
                       "imgsz": 640, "verbose": False,
                       "tracker": "botsort.yaml",
-                      "vid_stride": 3}
+                      "vid_stride": 7}
 
         for frame_number, results in enumerate(model.track(video_path, stream=True, **model_args)):
             if save_video:
@@ -43,7 +34,7 @@ class Tracking:
                 out.write(results.plot())
 
             if show_video:
-                frame = self.draw_debug(results, draw_boxes=False)
+                frame = self.draw_debug(results, draw_boxes=True)
                 cv2.imshow("frame", frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
@@ -58,10 +49,40 @@ class Tracking:
         people_objects = self.parse_results(results)
 
         for person in people_objects:
-            if not self.id_state.get(person.get_person_id()):
-                self.id_state[person.get_person_id()] = False
-            code = person.check_how_close_to_door()  # сохраняем код с функции
-            self.door_touch(person, code)  # смотрим если человек вошёл в дверь
+            # self.people_coming(person)
+            self._people_leave(person)
+
+    def _people_leave(self, person: People):
+        location_person = person.check_how_close_to_door()
+        if location_person == 1:
+            print("Человек находится рядом с дверной рамой")
+        elif location_person == 2:
+            print("Человек находится внутри дверной рамы")
+        else:
+            print("Человек находится далеко от двери")
+
+    def _people_coming(self, person: People):
+        id_person = person.get_person_id()
+        if not self.id_state.get(id_person):
+            self.id_state[id_person] = False
+        code = person.check_how_close_to_door()  # сохраняем код с функции
+        self.door_touch(person, code)  # смотрим если человек вошёл в дверь
+
+    def _door_touch(self, person: People, code: int) -> None:
+        """
+        Выводит в консоль сообщение о том что человек вошёл в дверь, информацию о человеке
+        :param person: Человек и его данные
+        :type person: People
+        :param code: код, возвращаемый People.check_how_close_to_door
+        :type code: int
+        :return: Ничего
+        :rtype: None
+        """
+        if code != 2 or self.id_state[person.get_person_id()]:
+            return
+        self.id_state[person.get_person_id()] = True
+        print("Человек вошёл в дверь")
+        person.print_person()
 
     @staticmethod
     def parse_results(results: Results) -> list[People]:
@@ -130,22 +151,6 @@ class Tracking:
                          (int(door[0] * coef), int(door[1] * coef)), (102, 255, 51), 5)
 
     # endregion
-
-    def door_touch(self, person: People, code: int) -> None:
-        """
-        Выводит в консоль сообщение о том что человек вошёл в дверь, информацию о человеке
-        :param person: Человек и его данные
-        :type person: People
-        :param code: код, возвращаемый People.check_how_close_to_door
-        :type code: int
-        :return: Ничего
-        :rtype: None
-        """
-        if code != 2 or self.id_state[person.get_person_id()]:
-            return
-        self.id_state[person.get_person_id()] = True
-        print("Человек вошёл в дверь")
-        person.print_person()
 
 
 if __name__ == "__main__":
