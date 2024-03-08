@@ -1,6 +1,5 @@
-import numpy
-
 from Doors import Doors
+from misc import Position, dist
 
 
 class People:
@@ -27,7 +26,7 @@ class People:
         print("X:", self.center_x)
         print("Y:", self.center_y)
 
-    def check_how_close_to_door(self) -> int:
+    def check_how_close_to_door(self) -> Position:
         """
         Смотрим насколько близко находится к двери
         :return: Возвращаем код, который означает как далеко человек находится от двери 
@@ -37,12 +36,11 @@ class People:
         door_centers = Doors.centers
         # print(door_centers)
         for door_center in door_centers:
-            distance_to_door = numpy.sqrt((self.center_x - door_center[0]) ** 2 + (self.center_y - door_center[1]) ** 2)
+            distance_to_door = dist(self.center_x, self.center_y, *door_center)
             # print(distance_to_door, door_center, (self.center_x, self.center_y))
             if distance_to_door < 20:
                 # self.print_person()
-                return 2  # Человек находится в пределах дверной рамы
+                return Position.Close
             elif distance_to_door < 100:
-                return 1  # Человек находится около дверной рамы
-
-        return 0  # Человек находится далеко от дверной рамы
+                return Position.Around
+        return Position.Far

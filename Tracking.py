@@ -3,10 +3,10 @@ import numpy as np
 from cv2.typing import MatLike
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
-from OperationsWithCordinates import boxes_center
 
-from People import People
 from Doors import Doors
+from misc import Position, boxes_center
+from People import People
 
 
 class Tracking:
@@ -17,9 +17,9 @@ class Tracking:
 
     def people_leave(self, person: People):
         location_person = person.check_how_close_to_door()
-        if location_person == 1:
+        if location_person is Position.Around:
             print("Человек находится рядом с дверной рамой")
-        elif location_person == 2:
+        elif location_person is Position.Close:
             print("Человек находится внутри дверной раме")
         else:
             print("Человек находится далеко от двери")
@@ -131,7 +131,7 @@ class Tracking:
 
     # endregion
 
-    def door_touch(self, person: People, code: int) -> None:
+    def door_touch(self, person: People, code: Position) -> None:
         """
         Выводит в консоль сообщение о том что человек вошёл в дверь, информацию о человеке
         :param person: Человек и его данные
@@ -141,7 +141,7 @@ class Tracking:
         :return: Ничего
         :rtype: None
         """
-        if code != 2 or self.id_state[person.get_person_id()]:
+        if code is not Position.Close or self.id_state[person.get_person_id()]:
             return
         self.id_state[person.get_person_id()] = True
         print("Человек вошёл в дверь")

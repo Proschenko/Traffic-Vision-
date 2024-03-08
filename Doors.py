@@ -3,7 +3,7 @@ from typing import Generator
 
 import numpy as np
 
-from OperationsWithCordinates import boxes_center
+from misc import boxes_center
 
 corners_path = "doors_corners.txt"
 door_names = ("women", "men", "kid")
