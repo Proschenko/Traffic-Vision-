@@ -1,7 +1,7 @@
 import cv2
 from ultralytics import YOLO
-from Debug_drawer import draw_debug
 
+from Debug_drawer import draw_debug
 from misc import Location
 from People import People, parse_results
 
@@ -11,15 +11,6 @@ class Tracking:
         self.image_width = 1920
         self.image_height = 1080
         self.id_state = dict()
-
-    def people_leave(self, person: People):
-        location_person = person.check_how_close_to_door()
-        if location_person is Location.Around:
-            print("Человек находится рядом с дверной рамой")
-        elif location_person is Location.Close:
-            print("Человек находится внутри дверной раме")
-        else:
-            print("Человек находится далеко от двери")
 
     def process_video_with_tracking(self, model: YOLO, video_path: str, show_video=True, save_path=None):
         save_video = save_path is not None
@@ -60,7 +51,6 @@ class Tracking:
             code = person.check_how_close_to_door()  # сохраняем код с функции
             self.door_touch(person, code)  # смотрим если человек вошёл в дверь
 
-
     def door_touch(self, person: People, code: Location) -> None:
         """
         Выводит в консоль сообщение о том что человек вошёл в дверь, информацию о человеке
@@ -76,6 +66,15 @@ class Tracking:
         self.id_state[person.get_person_id()] = True
         print("Человек вошёл в дверь")
         person.print_person()
+        
+    def people_leave(self, person: People):
+        location_person = person.check_how_close_to_door()
+        if location_person is Location.Around:
+            print("Человек находится рядом с дверной рамой")
+        elif location_person is Location.Close:
+            print("Человек находится внутри дверной раме")
+        else:
+            print("Человек находится далеко от двери")
 
 
 if __name__ == "__main__":

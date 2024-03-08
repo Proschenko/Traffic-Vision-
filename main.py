@@ -1,8 +1,10 @@
 import os
+
+from dotenv import load_dotenv
+from ultralytics import YOLO
+
 from CustomModel import CustomYOLOv8Model
 from Tracking import Tracking
-from ultralytics import YOLO
-from dotenv import load_dotenv
 
 load_dotenv()
 

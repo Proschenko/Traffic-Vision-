@@ -1,5 +1,7 @@
 from enum import Enum, IntEnum
+
 import numpy as np
+
 
 class Location(Enum):
     """
