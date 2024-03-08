@@ -6,8 +6,8 @@ venv/
 /Lib/
 /Traffic-Control-project-3/
 /Test input video/
-/Test video output/
 /self development images/
 /self development dataset/
 
 /.env
+/Test output video/

@@ -54,7 +54,7 @@ class Tracking:
         if save_video:
             out.release()
         cv2.destroyAllWindows()
-    
+
     def tracking(self, results: Results):
         # TODO: этот код нужно поделить на методы, каждый методы (зашел вышел прошел)
         for person in parse_results(results):
@@ -75,27 +75,41 @@ class Tracking:
 
     def _tracking(self):
         # TODO: Так будет работать логика будущего, сначала парсинг result, потом парсинг массива каждым методом
-        frame_objects = np.empty(10, dtype=object)
-        for i, frame_result in enumerate(self.predict_history):
-            frame_objects[i] = parse_results(frame_result)
+        pass
+        # frame_objects = np.empty(10, dtype=object)
+        # for i, frame_result in enumerate(self.predict_history):
+        #     frame_objects[i] = parse_results(frame_result)
 
         # self.people_coming(person)
         # self._people_leave(frame_objects)
-    def _door_touch(self, person: People, code: int) -> None:
-        """
-        Выводит в консоль сообщение о том что человек вошёл в дверь, информацию о человеке
-        :param person: Человек и его данные
-        :type person: People
-        :param code: код, возвращаемый People.check_how_close_to_door
-        :type code: int
-        :return: Ничего
-        :rtype: None
-        """
-        if code is not Location.Close or self.id_state[person.get_person_id()]:
-            return
-        self.id_state[person.get_person_id()] = True
-        print("Человек вошёл в дверь")
-        person.print_person()
+
+    def _people_coming(self, person: People):
+        # TODO: Проверка, человек ушел
+        pass
+
+    @staticmethod
+    def _door_touch(peoples_from_frame) -> None:
+        person_door_relationship = dict()
+        for frame_object in peoples_from_frame:
+            for person in frame_object:
+                person_id = person.get_person_id()
+                location_person = person.check_how_close_to_door()
+                if not person_door_relationship.get(person_id):
+                    person_door_relationship[person_id] = location_person
+                    continue
+                last_location = person_door_relationship[person_id]
+                if last_location == Location.Far and location_person == Location.Close:
+                    print(
+                        "Мама что произошло за за 7 фреймов")  # Смотрим случай когда за 7 кадров человек улетел куда-то
+                elif last_location == Location.Around and location_person == Location.Close:
+                    print("Человек вошёл в дверь")
+                    person.print_person()
+                elif last_location == Location.Close and location_person == Location.Around:
+                    print("Человек вышел из двери")
+                    person.print_person()
+                elif last_location == Location.Close and location_person == Location.Far:
+                    print("Мама что произошло за за 7 фреймов")
+                person_door_relationship[person_id] = location_person
 
 
 if __name__ == "__main__":
