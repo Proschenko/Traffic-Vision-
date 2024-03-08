@@ -5,7 +5,7 @@ from ultralytics import YOLO
 from ultralytics.engine.results import Results
 
 from Doors import Doors
-from misc import Location, boxes_center
+from misc import Distances, Location, boxes_center
 from People import People
 
 
@@ -35,7 +35,7 @@ class Tracking:
                 out.write(results.plot())
 
             if show_video:
-                frame = self._draw_debug(results, draw_boxes=True)
+                frame = self._draw_debug(results, draw_boxes=True, draw_lines=False)
                 cv2.imshow("frame", frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
@@ -131,9 +131,11 @@ class Tracking:
             r = 10
             pt1 = door.corners[:2]
             pt2 = door.corners[2:]
-            cv2.rectangle(frame, pt1, pt2, color=(0, 0, 255))
-            cv2.circle(frame, (x, y), radius=r, color=(0, 0, 255),
-                       thickness=-1)
+            cv2.rectangle(frame, pt1, pt2, color=(255, 255, 255))
+            cv2.circle(frame, (x, y), radius=Distances.Close, color=(0, 0, 255))
+            cv2.circle(frame, (x, y), radius=Distances.Around, color=(0, 255, 0))
+            # cv2.circle(frame, (x, y), radius=r, color=(0, 0, 255),
+            #            thickness=-1)
             cv2.putText(frame, door.name[0], org=(x - r, y - r * 2),
                         fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                         fontScale=1, color=(255, 255, 255),

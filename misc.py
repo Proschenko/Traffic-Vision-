@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, IntEnum
 import numpy as np
 
 
@@ -16,6 +16,11 @@ class Location(Enum):
     Far = 0
     Around = 1
     Close = 2
+
+
+class Distances(IntEnum):
+    Close = 20
+    Around = 100
 
 
 def dist(x1: float, y1: float, x2: float, y2: float) -> float:
