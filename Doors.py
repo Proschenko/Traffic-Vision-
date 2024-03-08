@@ -2,7 +2,6 @@ from dataclasses import dataclass, field
 from typing import Generator
 
 import numpy as np
-
 from misc import boxes_center
 
 corners_path = "doors_corners.txt"

@@ -6,6 +6,7 @@ from Doors import Doors
 from misc import Distances, Location, boxes_center, dist
 
 
+
 @dataclass(frozen=True, slots=True)
 class People:
     id_person: int

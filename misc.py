@@ -18,15 +18,18 @@ class Location(Enum):
     Around = 1
     Close = 2
 
+
 class Distances(IntEnum):
     Close = 54
     Around = 100
+
 
 def dist(x1: float, y1: float, x2: float, y2: float) -> float:
     """
     Вычисляет Евклидово расстояние
     """
     return np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+
 
 def boxes_center(corners: np.ndarray[float, float]) -> np.ndarray[float, float]:
     """
