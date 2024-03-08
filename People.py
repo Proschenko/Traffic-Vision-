@@ -1,6 +1,10 @@
 from dataclasses import dataclass
+
+from ultralytics.engine.results import Results
+
 from Doors import Doors
-from misc import Distances, Location, dist
+from misc import Distances, Location, boxes_center, dist
+
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,3 +46,32 @@ class People:
             elif distance_to_door < Distances.Around:
                 return Location.Around
         return Location.Far
+
+@dataclass
+class State:
+    location: Location
+    newborn: bool = True
+
+    def update(self, new_location: Location):
+        if self.location is new_location:
+            return
+        self.location = new_location
+        self.newborn = False
+
+def parse_results(results: Results) -> list[People]:
+    """
+    Создаёт список объектов People на основе result
+
+    :param results: Результат обнаружения объектов
+    :type results: Results
+    :return: Список объектов People
+    :rtype: list[People]
+    """
+    if results.boxes.id is None:
+        return list()
+    boxes = results.boxes.numpy()
+    centers = boxes_center(boxes.xyxy)
+    people = list()
+    for box, center in zip(boxes, centers.astype(int)):
+        people.append(People(int(*box.id), int(*box.cls), *box.conf, tuple(center)))
+    return people
