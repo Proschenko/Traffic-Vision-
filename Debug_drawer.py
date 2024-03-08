@@ -9,7 +9,7 @@ from People import parse_results
 
 
 def draw_debug(results: Results,
-                draw_boxes=True, draw_doors=True, draw_lines=True) -> MatLike:
+               draw_boxes=True, draw_doors=True, draw_lines=True) -> MatLike:
     frame = results.orig_img
     if draw_boxes:
         frame = results.plot()
@@ -19,6 +19,7 @@ def draw_debug(results: Results,
         for door in Doors:
             draw_door(frame, door)
     return cv2.resize(frame, (0, 0), fx=0.75, fy=0.75)
+
 
 def draw_door(frame: MatLike, door: Door):
     x, y = door.center
@@ -32,6 +33,7 @@ def draw_door(frame: MatLike, door: Door):
                 fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                 fontScale=1, color=(255, 255, 255),
                 thickness=2)
+
 
 def line_door_person(frame: np.ndarray, results: Results, coef: float = 1) -> None:
     """
@@ -49,6 +51,5 @@ def line_door_person(frame: np.ndarray, results: Results, coef: float = 1) -> No
     people_objects = parse_results(results)
     for person in people_objects:
         for door in Doors.centers:
-            cv2.line(frame, person.position, door, 
+            cv2.line(frame, person.position, door,
                      color=(102, 255, 51), thickness=5)
-

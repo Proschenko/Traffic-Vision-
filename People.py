@@ -6,7 +6,6 @@ from Doors import Doors
 from misc import Distances, Location, boxes_center, dist
 
 
-
 @dataclass(frozen=True, slots=True)
 class People:
     id_person: int
@@ -47,6 +46,7 @@ class People:
                 return Location.Around
         return Location.Far
 
+
 @dataclass
 class State:
     location: Location
@@ -55,8 +55,10 @@ class State:
     def update(self, new_location: Location):
         if self.location is new_location:
             return
+
         self.location = new_location
         self.newborn = False
+
 
 def parse_results(results: Results) -> list[People]:
     """

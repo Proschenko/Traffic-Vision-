@@ -44,16 +44,19 @@ class Tracking:
                     break
 
             self.tracking(results)
-            self.predict_history[frame_number % 10] = results
 
-            if frame_number % 10 == 0 and frame_number != 0:
-                self._tracking()
+            # TODO: Замах на будущее
+            # self.predict_history[frame_number % 10] = results
+            #
+            # if frame_number % 100 == 0 and frame_number != 0:
+            #     self._tracking()
 
         if save_video:
             out.release()
         cv2.destroyAllWindows()
     
     def tracking(self, results: Results):
+        # TODO: этот код нужно поделить на методы, каждый методы (зашел вышел прошел)
         for person in parse_results(results):
             now = person.check_how_close_to_door()
             if person.id_person not in self.id_location:
@@ -71,33 +74,13 @@ class Tracking:
             self.id_location[person.id_person].update(now)
 
     def _tracking(self):
+        # TODO: Так будет работать логика будущего, сначала парсинг result, потом парсинг массива каждым методом
         frame_objects = np.empty(10, dtype=object)
         for i, frame_result in enumerate(self.predict_history):
             frame_objects[i] = parse_results(frame_result)
 
         # self.people_coming(person)
-        self._people_leave(frame_objects)
-
-    @staticmethod
-    def _people_leave(peoples_from_frame):
-        # Вот так можно обходить
-        for frame_object in peoples_from_frame:
-            for person in frame_object:
-                location_person = person.check_how_close_to_door()
-                if location_person == Location.Around:
-                    print("Человек находится рядом с дверной рамой")
-                elif location_person == Location.Close:
-                    print("Человек находится внутри дверной рамы")
-                else:
-                    print("Человек находится далеко от двери")
-
-    def _people_coming(self, person: People):
-        id_person = person.get_person_id()
-        if not self.id_state.get(id_person):
-            self.id_state[id_person] = False
-        code = person.check_how_close_to_door()  # сохраняем код с функции
-        self._door_touch(person, code)  # смотрим если человек вошёл в дверь
-
+        # self._people_leave(frame_objects)
     def _door_touch(self, person: People, code: int) -> None:
         """
         Выводит в консоль сообщение о том что человек вошёл в дверь, информацию о человеке
@@ -113,15 +96,6 @@ class Tracking:
         self.id_state[person.get_person_id()] = True
         print("Человек вошёл в дверь")
         person.print_person()
-        
-    def people_leave(self, person: People):
-        location_person = person.check_how_close_to_door()
-        if location_person is Location.Around:
-            print("Человек находится рядом с дверной рамой")
-        elif location_person is Location.Close:
-            print("Человек находится внутри дверной раме")
-        else:
-            print("Человек находится далеко от двери")
 
 
 if __name__ == "__main__":
