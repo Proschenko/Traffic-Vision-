@@ -5,7 +5,7 @@ from ultralytics import YOLO
 from ultralytics.engine.results import Results
 
 from Doors import Doors
-from misc import Position, boxes_center
+from misc import Location, boxes_center
 from People import People
 
 
@@ -17,9 +17,9 @@ class Tracking:
 
     def people_leave(self, person: People):
         location_person = person.check_how_close_to_door()
-        if location_person is Position.Around:
+        if location_person is Location.Around:
             print("Человек находится рядом с дверной рамой")
-        elif location_person is Position.Close:
+        elif location_person is Location.Close:
             print("Человек находится внутри дверной раме")
         else:
             print("Человек находится далеко от двери")
@@ -75,12 +75,11 @@ class Tracking:
         """
         if results.boxes.id is None:
             return list()
-        ids = results.boxes.id.cpu().numpy().astype(int)
         boxes = results.boxes.numpy()
         centers = boxes_center(boxes.xyxy)
         people = list()
-        for id_people, box, center in zip(ids, boxes, centers):
-            people.append(People(id_people, int(*box.cls), center, *box.conf))
+        for box, center in zip(boxes, centers.astype(int)):
+            people.append(People(*box.id, int(*box.cls), *box.conf, tuple(center)))
         return people
 
     # region Интерактивное отображение дверей и векторов
@@ -126,12 +125,12 @@ class Tracking:
         people_objects = self.parse_results(results)
         for person in people_objects:
             for door in Doors.centers:
-                cv2.line(frame, (int(person.center_x * coef), int(person.center_y * coef)),
-                         (int(door[0] * coef), int(door[1] * coef)), (102, 255, 51), 5)
+                cv2.line(frame, person.position, door, 
+                         color=(102, 255, 51), thickness=5)
 
     # endregion
 
-    def door_touch(self, person: People, code: Position) -> None:
+    def door_touch(self, person: People, code: Location) -> None:
         """
         Выводит в консоль сообщение о том что человек вошёл в дверь, информацию о человеке
         :param person: Человек и его данные
@@ -141,7 +140,7 @@ class Tracking:
         :return: Ничего
         :rtype: None
         """
-        if code is not Position.Close or self.id_state[person.get_person_id()]:
+        if code is not Location.Close or self.id_state[person.get_person_id()]:
             return
         self.id_state[person.get_person_id()] = True
         print("Человек вошёл в дверь")

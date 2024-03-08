@@ -1,15 +1,15 @@
 from enum import Enum
 import numpy as np
 
-class Position(Enum):
+class Location(Enum):
     """
     Положениние человека относительно двери:
     Far = 0     : Далеко
     Around = 1  : Около
     Close = 2   : Внутри
 
-    >>> p = Position.Far
-    >>> p is Position.Far
+    >>> p = Location.Far
+    >>> p is Location.Far
     True
     """
     Far = 0
