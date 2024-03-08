@@ -1,9 +1,13 @@
+from collections import defaultdict, deque
+from functools import partial
+
 import cv2
 from ultralytics import YOLO
+from ultralytics.engine.results import Results
 
 from Debug_drawer import draw_debug
 from misc import Location
-from People import People, parse_results
+from People import People, State, parse_results
 
 
 class Tracking:
@@ -11,6 +15,8 @@ class Tracking:
         self.image_width = 1920
         self.image_height = 1080
         self.id_state = dict()
+
+        self.id_location: dict[int, State] = dict()
 
     def process_video_with_tracking(self, model: YOLO, video_path: str, show_video=True, save_path=None):
         save_video = save_path is not None
@@ -36,7 +42,7 @@ class Tracking:
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
 
-            self._tracking(results)
+            self.tracking(results)
 
         if save_video:
             out.release()
@@ -50,6 +56,23 @@ class Tracking:
                 self.id_state[person.get_person_id()] = False
             code = person.check_how_close_to_door()  # сохраняем код с функции
             self.door_touch(person, code)  # смотрим если человек вошёл в дверь
+    
+    def tracking(self, results: Results):
+        for person in parse_results(results):
+            now = person.check_how_close_to_door()
+            if person.id_person not in self.id_location:
+                newborn = now is Location.Close
+                self.id_location[person.id_person] = State(now, newborn)
+                if newborn:
+                    print("Я родился!", person)
+                continue
+            state = self.id_location[person.id_person]
+            before = state.location
+            if now is Location.Close and before is Location.Around:
+                print("Я вышел!", person)
+            if not state.newborn and now is Location.Around and before is Location.Close:
+                print("Погодите-ка, я просто мимо проходил", person)
+            self.id_location[person.id_person].update(now)
 
     def door_touch(self, person: People, code: Location) -> None:
         """

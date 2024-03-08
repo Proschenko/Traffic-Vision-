@@ -19,7 +19,7 @@ class Location(Enum):
     Close = 2
 
 class Distances(IntEnum):
-    Close = 20
+    Close = 54
     Around = 100
 
 def dist(x1: float, y1: float, x2: float, y2: float) -> float:

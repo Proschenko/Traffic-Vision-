@@ -46,6 +46,17 @@ class People:
                 return Location.Around
         return Location.Far
 
+@dataclass
+class State:
+    location: Location
+    newborn: bool = True
+
+    def update(self, new_location: Location):
+        if self.location is new_location:
+            return
+        self.location = new_location
+        self.newborn = False
+
 def parse_results(results: Results) -> list[People]:
     """
     Создаёт список объектов People на основе result
