@@ -1,4 +1,5 @@
 from enum import Enum, IntEnum
+
 import numpy as np
 
 
@@ -19,7 +20,7 @@ class Location(Enum):
 
 
 class Distances(IntEnum):
-    Close = 20
+    Close = 54
     Around = 100
 
 
