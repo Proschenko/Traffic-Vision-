@@ -44,7 +44,6 @@ class Tracking:
                     break
 
             self.tracking(results)
-
             # TODO: Замах на будущее
             # self.predict_history[frame_number % 10] = results
             #
@@ -75,10 +74,12 @@ class Tracking:
 
     def _tracking(self):
         # TODO: Так будет работать логика будущего, сначала парсинг result, потом парсинг массива каждым методом
-        pass
-        # frame_objects = np.empty(10, dtype=object)
-        # for i, frame_result in enumerate(self.predict_history):
-        #     frame_objects[i] = parse_results(frame_result)
+        # pass
+        frame_objects = np.empty(10, dtype=object)
+        for i, frame_result in enumerate(self.predict_history):
+            frame_objects[i] = parse_results(frame_result)
+
+        self._door_touch(frame_objects)
 
         # self.people_coming(person)
         # self._people_leave(frame_objects)
@@ -89,6 +90,7 @@ class Tracking:
 
     @staticmethod
     def _door_touch(peoples_from_frame) -> None:
+        # TODO: Не работает, нужно разбираться почему
         person_door_relationship = dict()
         for frame_object in peoples_from_frame:
             for person in frame_object:
