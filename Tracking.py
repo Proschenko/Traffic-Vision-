@@ -2,6 +2,7 @@ from collections import defaultdict, deque
 from functools import partial
 
 import cv2
+import numpy as np
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 
@@ -72,7 +73,7 @@ class Tracking:
     def _tracking(self):
         frame_objects = np.empty(10, dtype=object)
         for i, frame_result in enumerate(self.predict_history):
-            frame_objects[i] = self.parse_results(frame_result)
+            frame_objects[i] = parse_results(frame_result)
 
         # self.people_coming(person)
         self._people_leave(frame_objects)
