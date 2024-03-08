@@ -88,25 +88,16 @@ class Tracking:
                     person_door_relationship[person_id] = location_person
                     continue
                 last_location = person_door_relationship[person_id]
-                if last_location == Location.Far:
-                    if location_person == Location.Around:
-                        print("Человек подошёл к двери")
-                    elif location_person == Location.Close:
-                        print("Мама что произошло за за 7 фреймов")
-                        print("Человек находится внутри дверной рамы")
-                elif last_location == Location.Around:
-                    if location_person == Location.Close:
-                        print("Человек вошёл в дверь")
-                        person.print_person()
-                    elif location_person == Location.Far:
-                        print("Человек ушёл от двери")
-                elif last_location == Location.Close:
-                    if location_person == Location.Around:
-                        print("Человек вышел из двери")
-                        person.print_person()
-                    elif location_person == Location.Far:
-                        print("Мама что произошло за за 7 фреймов")
-                        print("Человек находится далеко от двери")
+                if last_location == Location.Far and location_person == Location.Close:
+                    print("Мама что произошло за за 7 фреймов") #Смотрим случай когда за 7 кадров человек улетел куда-то
+                elif last_location == Location.Around and location_person == Location.Close:
+                    print("Человек вошёл в дверь")
+                    person.print_person()
+                elif last_location == Location.Close and location_person == Location.Around:
+                    print("Человек вышел из двери")
+                    person.print_person()
+                elif last_location == Location.Close and location_person == Location.Far:
+                    print("Мама что произошло за за 7 фреймов")
                 person_door_relationship[person_id] = location_person
 
 
