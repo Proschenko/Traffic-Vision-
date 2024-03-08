@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from Doors import Doors
-from misc import Location, dist
+from misc import Distances, Location, dist
 
 @dataclass(frozen=True, slots=True)
 class People:
@@ -35,9 +35,9 @@ class People:
         for door_center in door_centers:
             distance_to_door = dist(*self.position, *door_center)
             # print(distance_to_door, door_center, (self.center_x, self.center_y))
-            if distance_to_door < 20:
+            if distance_to_door < Distances.Close:
                 # self.print_person()
                 return Location.Close
-            elif distance_to_door < 100:
+            elif distance_to_door < Distances.Around:
                 return Location.Around
         return Location.Far
