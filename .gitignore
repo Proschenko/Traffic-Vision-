@@ -9,3 +9,5 @@ venv/
 /Test video output/
 /self development images/
 /self development dataset/
+
+/.env

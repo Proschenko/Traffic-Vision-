@@ -1,4 +1,28 @@
+from enum import Enum
 import numpy as np
+
+
+class Location(Enum):
+    """
+    Положениние человека относительно двери:
+    Far = 0     : Далеко
+    Around = 1  : Около
+    Close = 2   : Внутри
+
+    >>> p = Location.Far
+    >>> p is Location.Far
+    True
+    """
+    Far = 0
+    Around = 1
+    Close = 2
+
+
+def dist(x1: float, y1: float, x2: float, y2: float) -> float:
+    """
+    Вычисляет Евклидово расстояние
+    """
+    return np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
 
 def boxes_center(corners: np.ndarray[float, float]) -> np.ndarray[float, float]:

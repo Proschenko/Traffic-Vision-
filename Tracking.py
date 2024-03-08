@@ -3,10 +3,10 @@ import numpy as np
 from cv2.typing import MatLike
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
-from OperationsWithCordinates import boxes_center
 
-from People import People
 from Doors import Doors
+from misc import Location, boxes_center
+from People import People
 
 
 class Tracking:
@@ -14,6 +14,7 @@ class Tracking:
         self.image_width = 1920
         self.image_height = 1080
         self.id_state = dict()
+        self.predict_history = np.empty(10, dtype=Results)
 
     def process_video_with_tracking(self, model: YOLO, video_path: str, show_video=True, save_path=None):
         save_video = save_path is not None
@@ -34,39 +35,47 @@ class Tracking:
                 out.write(results.plot())
 
             if show_video:
-                frame = self.draw_debug(results, draw_boxes=True)
+                frame = self._draw_debug(results, draw_boxes=True)
                 cv2.imshow("frame", frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
 
-            self._tracking(results)
+            self.predict_history[frame_number % 10] = results
+
+            if frame_number % 10 == 0 and frame_number != 0:
+                self._tracking()
 
         if save_video:
             out.release()
         cv2.destroyAllWindows()
 
-    def _tracking(self, results):
-        people_objects = self.parse_results(results)
+    def _tracking(self):
+        frame_objects = np.empty(10, dtype=object)
+        for i, frame_result in enumerate(self.predict_history):
+            frame_objects[i] = self.parse_results(frame_result)
 
-        for person in people_objects:
-            # self.people_coming(person)
-            self._people_leave(person)
+        # self.people_coming(person)
+        self._people_leave(frame_objects)
 
-    def _people_leave(self, person: People):
-        location_person = person.check_how_close_to_door()
-        if location_person == 1:
-            print("Человек находится рядом с дверной рамой")
-        elif location_person == 2:
-            print("Человек находится внутри дверной рамы")
-        else:
-            print("Человек находится далеко от двери")
+    @staticmethod
+    def _people_leave(peoples_from_frame):
+        # Вот так можно обходить
+        for frame_object in peoples_from_frame:
+            for person in frame_object:
+                location_person = person.check_how_close_to_door()
+                if location_person == Location.Around:
+                    print("Человек находится рядом с дверной рамой")
+                elif location_person == Location.Close:
+                    print("Человек находится внутри дверной рамы")
+                else:
+                    print("Человек находится далеко от двери")
 
     def _people_coming(self, person: People):
         id_person = person.get_person_id()
         if not self.id_state.get(id_person):
             self.id_state[id_person] = False
         code = person.check_how_close_to_door()  # сохраняем код с функции
-        self.door_touch(person, code)  # смотрим если человек вошёл в дверь
+        self._door_touch(person, code)  # смотрим если человек вошёл в дверь
 
     def _door_touch(self, person: People, code: int) -> None:
         """
@@ -96,28 +105,27 @@ class Tracking:
         """
         if results.boxes.id is None:
             return list()
-        ids = results.boxes.id.cpu().numpy().astype(int)
         boxes = results.boxes.numpy()
         centers = boxes_center(boxes.xyxy)
         people = list()
-        for id_people, box, center in zip(ids, boxes, centers):
-            people.append(People(id_people, int(*box.cls), center, *box.conf))
+        for box, center in zip(boxes, centers.astype(int)):
+            people.append(People(*box.id, int(*box.cls), *box.conf, tuple(center)))
         return people
 
     # region Интерактивное отображение дверей и векторов
-    def draw_debug(self, results: Results,
-                   draw_boxes=True, draw_doors=True, draw_lines=True) -> MatLike:
+    def _draw_debug(self, results: Results,
+                    draw_boxes=True, draw_doors=True, draw_lines=True) -> MatLike:
         frame = results.orig_img
         if draw_boxes:
             frame = results.plot()
         if draw_lines:
-            self.line_door_person(frame, results)
+            self._line_door_person(frame, results)
         if draw_doors:
-            self.draw_doors(frame)
+            self._draw_doors(frame)
         return cv2.resize(frame, (0, 0), fx=0.75, fy=0.75)
 
     @staticmethod
-    def draw_doors(frame: MatLike):
+    def _draw_doors(frame: MatLike):
         for door in Doors:
             x, y = door.center
             r = 10
@@ -131,7 +139,7 @@ class Tracking:
                         fontScale=1, color=(255, 255, 255),
                         thickness=2)
 
-    def line_door_person(self, frame: np.ndarray, results: Results, coef: float = 1) -> None:
+    def _line_door_person(self, frame: np.ndarray, results: Results, coef: float = 1) -> None:
         """
         Рисует линии от человека к 3м дверям, обращаясь к координатам из enum Doors
 
@@ -147,11 +155,7 @@ class Tracking:
         people_objects = self.parse_results(results)
         for person in people_objects:
             for door in Doors.centers:
-                cv2.line(frame, (int(person.center_x * coef), int(person.center_y * coef)),
-                         (int(door[0] * coef), int(door[1] * coef)), (102, 255, 51), 5)
+                cv2.line(frame, person.position, door,
+                         color=(102, 255, 51), thickness=5)
 
     # endregion
-
-
-if __name__ == "__main__":
-    pass
