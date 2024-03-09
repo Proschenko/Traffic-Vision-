@@ -64,6 +64,7 @@ for img_name in img_list:
     img_extension = os.path.splitext(img_name)[-1].lower()
 
     # записываем файл аннотации в папку базы изображений для импорта
+
     txt_name = img_name.replace(img_extension, ".txt")
     with open(os.path.join('self development dataset/train/labels', txt_name), 'w') as f:
         for line in annot_lines:

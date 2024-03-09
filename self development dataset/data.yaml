@@ -1,0 +1,10 @@
+names:
+- coach
+- kid
+- man
+- woman
+nc: 4
+
+test: ../test/images
+train: ../train/images
+val: ../valid/images

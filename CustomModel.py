@@ -1,16 +1,10 @@
-import json
 import os
 import random
 import shutil
 
-# import matplotlib.patches as patches
-# import matplotlib.pyplot as plt
-import cv2
-import random
 import numpy as np
 import torch
 import yaml
-from easyocr import Reader
 from roboflow import Roboflow
 from ultralytics import YOLO
 
@@ -21,7 +15,7 @@ np.random.seed(42)
 
 class CustomYOLOv8Model:
     def __init__(self):
-        self.dataset_version = 2
+        self.dataset_version = 3
         self.rf = Roboflow(api_key="rBzIu5I6ccC0pMQqHBlF")
         self.dataset_name = "traffic-control-project"
 
@@ -47,15 +41,26 @@ class CustomYOLOv8Model:
         with open(data_yaml_path, 'w') as file:
             yaml.dump(data, file)
 
-    def download_datasets_from_roboflow(self):
+    def _download_datasets_from_roboflow(self):
+        """
+        Загружает датасет с Roboflow
+
+        :return: путь к датасету
+        :rtype: str
+        """
         project = self.rf.workspace("traffic-vision-workspace-kb8fc").project("traffic-control-project")
-        version = project.version(2)
+        version = project.version(self.dataset_version)
         dataset = version.download("yolov8")
         return dataset.location
 
     @staticmethod
-    def delete_exists_folder(folder_path):
-        # Если папка существует, удалить ее
+    def _delete_exists_folder(folder_path):
+        """
+        Удаляет папку, если она существует
+
+        :param folder_path: Путь к папке
+        :type folder_path: str
+        """
         if os.path.exists(folder_path):
             shutil.rmtree(folder_path)
             print(f'Папка {folder_path} успешно удалена.')
@@ -71,11 +76,11 @@ class CustomYOLOv8Model:
         """
 
         dataset_path = self.dataset_name + "-" + str(self.dataset_version)
-        self.delete_exists_folder(dataset_path)
+        self._delete_exists_folder(dataset_path)
         target_folder = os.path.join("yolov5", "datasets", dataset_path)
-        self.delete_exists_folder(target_folder)
+        self._delete_exists_folder(target_folder)
 
-        source_folder = self.download_datasets_from_roboflow()
+        source_folder = self._download_datasets_from_roboflow()
         data_yaml_path = f"{dataset_path}/data.yaml"
         self._update_data_yaml(data_yaml_path)
 
@@ -97,7 +102,7 @@ class CustomYOLOv8Model:
         except OSError as e:
             print(f'Не удалось удалить папку {dataset_path}: {e}')
 
-        self.download_datasets_from_roboflow()
+        self._download_datasets_from_roboflow()
         self._update_data_yaml(data_yaml_path)
 
     # endregion
@@ -112,99 +117,7 @@ class CustomYOLOv8Model:
         :return: Нет возвращаемого значения.
         """
 
-        name_model = "yolov8n.pt"
-        model = YOLO(name_model)
-        model.train(data=f"{self.dataset_name}-{self.dataset_version}/data.yaml", epochs=number_epoch, imgsz=image_size)
-
-    # region варианты предсказания
-    def predict_my_model(self, img_path, show_predict=False):
-        """
-        Предсказывает объекты на изображении с использованием обученной модели YOLOv8.
-
-        :param img_path: Путь к изображению для предсказания объектов.
-        :type img_path: str
-        :param show_predict: Флаг для отображения графического представления предсказанных объектов.
-        :type show_predict: bool, optional
-        :return: Строка JSON с информацией о распознанных объектах.
-        :rtype: str
-        """
-
-        name_model = "runs/detect/train12/weights/best.pt"
-        model = YOLO(name_model)  # Загрузка
-        rez_predict = model.predict(img_path)
-        rez_json_file, coordinates, categories = self._infer_objects(rez_predict)
-        if show_predict and img_path.find(".jpg"):
-            self._plot_results(coordinates, categories, img_path)
-        return rez_json_file
-
-    @staticmethod
-    def text_recognition(file_path):
-        reader = Reader(["en", "ru"])
-        result = reader.readtext(file_path, detail=0)
-        return result
-
-    # endregion
-
-    @staticmethod
-    def process_video_with_tracking(model, input_video_path, show_video=True, save_video=False,
-                                    output_video_path="output_video.mp4"):
-        # Open the input video file
-        cap = cv2.VideoCapture(input_video_path)
-
-        if not cap.isOpened():
-            raise Exception("Error: Could not open video file.")
-
-        # Get inaput video frame rate and dimensions
-        fps = int(cap.get(cv2.CAP_PROP_FPS))
-        frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-        # Define the output video writer
-        if save_video:
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
-
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
-            results = model.track(frame, iou=0.4, conf=0.5, persist=True, imgsz=608, verbose=False,
-                                  tracker="botsort.yaml")
-
-            if results[0].boxes.id != None:  # this will ensure that id is not None -> exist tracks
-                boxes = results[0].boxes.xyxy.cpu().numpy().astype(int)
-                ids = results[0].boxes.id.cpu().numpy().astype(int)
-
-                for box, id in zip(boxes, ids):
-                    # Generate a random color for each object based on its ID
-                    random.seed(int(id))
-                    color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-
-                    cv2.rectangle(frame, (box[0], box[1]), (box[2], box[3],), color, 2)
-                    cv2.putText(
-                        frame,
-                        f"Id {id}",
-                        (box[0], box[1]),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5,
-                        (0, 255, 255),
-                        2,
-                    )
-
-            if save_video:
-                out.write(frame)
-
-            if show_video:
-                frame = cv2.resize(frame, (0, 0), fx=0.75, fy=0.75)
-                cv2.imshow("frame", frame)
-
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                break
-
-        # Release the input video capture and output video writer
-        cap.release()
-        if save_video:
-            out.release()
-
-        # Close all OpenCV windows
-        cv2.destroyAllWindows()
+        name_model = "yolov8m.pt"
+        train_model = YOLO(name_model)
+        train_model.train(data=f"{self.dataset_name}-{self.dataset_version}/data.yaml",
+                          epochs=number_epoch, imgsz=image_size)

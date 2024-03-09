@@ -1,9 +1,13 @@
-/output_video.mp4
 /yolov5/
 /ultralytics/
 .idea/
 __pycache__/
 venv/
 /Lib/
-/Traffic-Control-project-1/
-/Traffic-Control-project-2/
+/Traffic-Control-project-3/
+/Test input video/
+/self development images/
+/self development dataset/
+
+/.env
+/Test output video/
