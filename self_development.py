@@ -13,9 +13,9 @@ def delete_files_in_folder(folder_path):
                 print(f"Error deleting file: {file_path} -- {e}")
 
 
-my_best_model = "runs/detect/train/weights/best.pt"
+my_best_model = "runs/detect/train/weights/best.pt"  # Загружаем модель
 model = YOLO(my_best_model)
-directory = r"D:\я у мамы программист\3 курс 2 семестр IT-проекты\self development images"  # Отсюда берем кадры
+directory = r"D:\я у мамы программист\3 курс 2 семестр IT-проекты\Traffic-Vision-\self development images"  # Отсюда берем кадры
 train_images_path = 'self development dataset/train/images'  # Сюда складываем
 img_list = os.listdir(directory)
 print(f"В папке имеется {len(img_list)} изображений")
@@ -60,9 +60,14 @@ for img_name in img_list:
     # копируем картинку в папку базы изображений для импорта
     cv2.imwrite(os.path.join(train_images_path, img_name), img_copy)
 
+    # определить расширение изображения (png или jpg)
+    img_extension = os.path.splitext(img_name)[-1].lower()
+
     # записываем файл аннотации в папку базы изображений для импорта
-    txt_name = img_name.replace(".png", ".txt")
-    with open(f'self development dataset/train2/labels/{txt_name}', 'w') as f:
+
+    txt_name = img_name.replace(img_extension, ".txt")
+    with open(os.path.join('self development dataset/train/labels', txt_name), 'w') as f:
         for line in annot_lines:
             f.write(line)
             f.write('\n')
+
