@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from ultralytics.engine.results import Results
 
-from Doors import Doors
+from Doors import Doors, Door
 from misc import Distances, Location, boxes_center, dist
 
 
@@ -26,6 +26,9 @@ class People:
         print("Confidence:", self.confidence)
         print("X:", self.position[0])
         print("Y:", self.position[1])
+    
+    def nearest_door(self) -> Door:
+        return min(Doors, key=lambda d: dist(*d.center, *self.position))
 
     def check_how_close_to_door(self) -> Location:
         """
