@@ -18,6 +18,7 @@ class Tracking:
         self.id_state = dict()
         self.id_location: dict[int, State] = dict()
         self.predict_history = np.empty(10, dtype=Results)
+        self.in_out = [0, 0]
 
     def process_video_with_tracking(self, model: YOLO, video_path: str, show_video=True, save_path=None):
         save_video = save_path is not None
@@ -44,11 +45,13 @@ class Tracking:
                     break
 
             self.tracking(results)
+            print(f"На данный момент Вышло: {self.in_out[1]} Зашло: {self.in_out[0]}")
             # TODO: Замах на будущее
             # self.predict_history[frame_number % 10] = results
             #
             # if frame_number % 100 == 0 and frame_number != 0:
             #     self._tracking()
+        
 
         if save_video:
             out.release()
@@ -62,14 +65,20 @@ class Tracking:
                 newborn = now is Location.Close
                 self.id_location[person.id_person] = State(now, newborn)
                 if newborn:
-                    print("Я родился!", person)
+                    self.in_out[0] += 1
+                    nearest_door = person.nearest_door()
+                    print("Я родился!", nearest_door.name)
                 continue
             state = self.id_location[person.id_person]
             before = state.location
             if now is Location.Close and before is Location.Around:
-                print("Я вышел!", person)
+                self.in_out[1] += 1
+                nearest_door = person.nearest_door()
+                print("Я вышел!", nearest_door.name)
             if not state.newborn and now is Location.Around and before is Location.Close:
-                print("Погодите-ка, я просто мимо проходил", person)
+                self.in_out[1] -= 1
+                nearest_door = person.nearest_door()
+                print("Погодите-ка, я просто мимо проходил", nearest_door.name)
             self.id_location[person.id_person].update(now)
 
     def _tracking(self):
