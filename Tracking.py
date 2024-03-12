@@ -1,5 +1,5 @@
-from collections import defaultdict, deque
-from functools import partial
+from dataclasses import dataclass
+from enum import Enum, auto
 
 import cv2
 import numpy as np
@@ -8,14 +8,29 @@ from ultralytics.engine.results import Results
 
 from Debug_drawer import draw_debug
 from misc import Location
-from People import People, State, parse_results
+from People import People, parse_results
 
+
+class Action(Enum):
+    Entered = auto()
+    Exited = auto()
+    Passed = auto()
+    
+@dataclass
+class State:
+    close: bool
+    entering: bool
+
+    def update(self, close: bool):
+        if self.close == close:
+            return
+        self.close = close
+        self.entering = False
 
 class Tracking:
     def __init__(self) -> None:
         self.image_width = 1920
         self.image_height = 1080
-        self.id_state = dict()
         self.id_location: dict[int, State] = dict()
         self.predict_history = np.empty(10, dtype=Results)
         self.in_out = [0, 0]
@@ -52,7 +67,8 @@ class Tracking:
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
 
-            self.tracking(results)
+            persons = parse_results(results)
+            self.tracking(persons)
             print(f"На данный момент Вышло: {self.in_out[1]} Зашло: {self.in_out[0]}")
             # TODO: Замах на будущее
             # self.predict_history[frame_number % 10] = results
@@ -63,35 +79,43 @@ class Tracking:
         if save_video:
             out.release()
         cv2.destroyAllWindows()
-
-    def tracking(self, results: Results):
-        """
-        TODO: документация
-        :param results:
-        :return:
-        """
-        # TODO: этот код нужно поделить на методы, каждый методы (зашел вышел прошел)
-        for person in parse_results(results):
-            now = person.check_how_close_to_door()
-            if person.id_person not in self.id_location:
-                newborn = now is Location.Close
-                self.id_location[person.id_person] = State(now, newborn)
-                if newborn:
+    
+    def is_person_entered(self, close: bool, history: State|None) -> bool:
+        return history is None and close
+    
+    def is_person_exited(self, close: bool, history: State|None) -> bool:
+        return close and history is not None and not history.close
+    
+    def is_person_passed(self, close: bool, history: State|None) -> bool:
+        return not close and history is not None and history.close and not history.entering
+    
+    def check_action(self, close: bool, history: State|None) -> Action|None:
+        if self.is_person_entered(close, history):
+            return Action.Entered
+        if self.is_person_exited(close, history):
+            return Action.Exited         
+        if self.is_person_passed(close, history):
+            return Action.Passed
+    
+    def tracking(self, persons: list[People]):
+        for person in persons:
+            close = person.is_close()
+            history = self.id_location.get(person.id_person, None)
+            action = self.check_action(close, history)
+            match action:
+                case Action.Entered:
+                    print("Я родилсо")
                     self.in_out[0] += 1
-                    nearest_door = person.nearest_door()
-                    print("Я родился!", nearest_door.name)
-                continue
-            state = self.id_location[person.id_person]
-            before = state.location
-            if now is Location.Close and before is Location.Around:
-                self.in_out[1] += 1
-                nearest_door = person.nearest_door()
-                print("Я вышел!", nearest_door.name)
-            if not state.newborn and now is Location.Around and before is Location.Close:
-                self.in_out[1] -= 1
-                nearest_door = person.nearest_door()
-                print("Погодите-ка, я просто мимо проходил", nearest_door.name)
-            self.id_location[person.id_person].update(now)
+                case Action.Exited:
+                    print("Я ухожук")
+                    self.in_out[1] += 1
+                case Action.Passed:
+                    print("Я передумал")
+                    self.in_out[1] -= 1
+            if history is None:
+                self.id_location[person.id_person] = State(close, action is Action.Entered)
+            else:
+                self.id_location[person.id_person].update(close)
 
     def _tracking(self):
         # TODO: Так будет работать логика будущего, сначала парсинг result, потом парсинг массива каждым методом

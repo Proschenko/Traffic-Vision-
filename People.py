@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from ultralytics.engine.results import Results
 
-from Doors import Doors, Door
+from Doors import Door, Doors
 from misc import Distances, Location, boxes_center, dist
 
 
@@ -29,6 +29,18 @@ class People:
     
     def nearest_door(self) -> Door:
         return min(Doors, key=lambda d: dist(*d.center, *self.position))
+    
+    def is_close(self) -> bool:
+        """
+        Проверяет находится человек в двери или нет
+
+        :return: Находится в двери
+        :rtype: bool
+        """
+        for door in Doors:
+            if dist(*door.center, *self.position) < Distances.Close:
+                return True
+        return False
 
     def check_how_close_to_door(self) -> Location:
         """
@@ -48,25 +60,6 @@ class People:
             elif distance_to_door < Distances.Around:
                 return Location.Around
         return Location.Far
-
-
-@dataclass
-class State:
-    location: Location
-    newborn: bool = True
-
-    def update(self, new_location: Location):
-        """
-        TODO: документация
-        :param new_location:
-        :return:
-        """
-        if self.location is new_location:
-            return
-
-        self.location = new_location
-        self.newborn = False
-
 
 def parse_results(results: Results) -> list[People]:
     """
