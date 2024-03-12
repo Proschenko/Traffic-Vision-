@@ -69,7 +69,6 @@ class Tracking:
 
             persons = parse_results(results)
             self.tracking(persons)
-            print(f"На данный момент Вышло: {self.in_out[1]} Зашло: {self.in_out[0]}")
             # TODO: Замах на будущее
             # self.predict_history[frame_number % 10] = results
             #
@@ -104,14 +103,16 @@ class Tracking:
             action = self.check_action(close, history)
             match action:
                 case Action.Entered:
-                    print("Я родилсо")
+                    # print("Я родилсо")
                     self.in_out[0] += 1
                 case Action.Exited:
-                    print("Я ухожук")
+                    # print("Я ухожук")
                     self.in_out[1] += 1
                 case Action.Passed:
-                    print("Я передумал")
+                    # print("Я передумал")
                     self.in_out[1] -= 1
+            if action is not None:
+                print(f"На данный момент Вышло: {self.in_out[1]} Зашло: {self.in_out[0]}")
             if history is None:
                 self.id_location[person.id_person] = State(close, action is Action.Entered)
             else:
