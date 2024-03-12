@@ -35,4 +35,4 @@ if __name__ == "__main__":
     input_video = r"D:\я у мамы программист\3 курс 2 семестр IT-проекты\Traffic-Vision-\Test input video\test.mp4"
     output_prefix = r"D:\я у мамы программист\3 курс 2 семестр IT-проекты\Traffic-Vision-\Test output video\output"
     clean_output_folder()
-    cut_video(input_video, output_prefix, number_video=8)
+    cut_video(input_video, output_prefix, number_video=16)

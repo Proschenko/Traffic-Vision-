@@ -25,6 +25,11 @@ class DoorList:
 
     @classmethod
     def from_file(cls, path: str):
+        """
+        TODO: документация
+        :param path:
+        :return:
+        """
         doors = list()
         with open(path) as file:
             for row in file.readlines():
@@ -38,10 +43,19 @@ class DoorList:
 
     @property
     def centers(self) -> tuple[tuple[int, int]]:
+        """
+        TODO: документация
+        :return:
+        """
         return tuple(d.center for d in self.doors)
 
 
 def update_corners(corners: list[list[float]]):
+    """
+    TODO: документация
+    :param corners:
+    :return:
+    """
     with open(corners_path, 'w') as file:
         for name, row in zip(door_names, corners):
             print(name, " ".join(map(str, row)), file=file)
@@ -49,6 +63,12 @@ def update_corners(corners: list[list[float]]):
 
 def corners_from_norm(corners: list[list[float]],
                       image_shape: tuple[int, int]) -> np.ndarray[int, int]:
+    """
+    TODO: документация
+    :param corners:
+    :param image_shape:
+    :return:
+    """
     corners = np.array(corners)
     corners[..., (0, 2)] *= image_shape[0]
     corners[..., (1, 3)] *= image_shape[1]
@@ -56,6 +76,11 @@ def corners_from_norm(corners: list[list[float]],
 
 
 def corners_from_width_height(data: list[list[int]]) -> np.ndarray[int, int]:
+    """
+    TODO: документация
+    :param data:
+    :return:
+    """
     data = np.array(data)
     data[..., 2:] += data[..., :2]
     return data

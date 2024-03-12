@@ -4,6 +4,11 @@ from ultralytics import YOLO
 
 
 def delete_files_in_folder(folder_path):
+    """
+    TODO: Удаляет все файлы из папки
+    :param folder_path:
+    :return:
+    """
     for root, dirs, files in os.walk(folder_path):
         for file_name in files:
             file_path = os.path.join(root, file_name)
@@ -13,9 +18,11 @@ def delete_files_in_folder(folder_path):
                 print(f"Error deleting file: {file_path} -- {e}")
 
 
+# region Этот код используется для самообучения модели
 my_best_model = "runs/detect/train/weights/best.pt"  # Загружаем модель
 model = YOLO(my_best_model)
-directory = r"D:\я у мамы программист\3 курс 2 семестр IT-проекты\Traffic-Vision-\self development images"  # Отсюда берем кадры
+# Отсюда берем кадры
+directory = r"D:\я у мамы программист\3 курс 2 семестр IT-проекты\Traffic-Vision-\self development images"
 train_images_path = 'self development dataset/train/images'  # Сюда складываем
 img_list = os.listdir(directory)
 print(f"В папке имеется {len(img_list)} изображений")
@@ -70,4 +77,4 @@ for img_name in img_list:
         for line in annot_lines:
             f.write(line)
             f.write('\n')
-
+# endregion

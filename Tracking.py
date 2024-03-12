@@ -21,6 +21,14 @@ class Tracking:
         self.in_out = [0, 0]
 
     def process_video_with_tracking(self, model: YOLO, video_path: str, show_video=True, save_path=None):
+        """
+        TODO: документация
+        :param model:
+        :param video_path:
+        :param show_video:
+        :param save_path:
+        :return:
+        """
         save_video = save_path is not None
         out = None
 
@@ -51,13 +59,17 @@ class Tracking:
             #
             # if frame_number % 100 == 0 and frame_number != 0:
             #     self._tracking()
-        
 
         if save_video:
             out.release()
         cv2.destroyAllWindows()
 
     def tracking(self, results: Results):
+        """
+        TODO: документация
+        :param results:
+        :return:
+        """
         # TODO: этот код нужно поделить на методы, каждый методы (зашел вышел прошел)
         for person in parse_results(results):
             now = person.check_how_close_to_door()

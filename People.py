@@ -56,6 +56,11 @@ class State:
     newborn: bool = True
 
     def update(self, new_location: Location):
+        """
+        TODO: документация
+        :param new_location:
+        :return:
+        """
         if self.location is new_location:
             return
 

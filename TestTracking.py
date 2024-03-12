@@ -1,7 +1,7 @@
 import unittest
 
 import numpy as np
-from Tracking import boxes_center
+from misc import boxes_center
 
 class TestBoxesCenter(unittest.TestCase):
     
