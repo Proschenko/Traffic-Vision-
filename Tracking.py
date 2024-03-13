@@ -15,7 +15,8 @@ class Action(Enum):
     Entered = auto()
     Exited = auto()
     Passed = auto()
-    
+
+
 @dataclass
 class State:
     close: bool
@@ -26,6 +27,7 @@ class State:
             return
         self.close = close
         self.entering = False
+
 
 class Tracking:
     def __init__(self) -> None:
@@ -69,6 +71,7 @@ class Tracking:
 
             persons = parse_results(results)
             self.tracking(persons)
+
             # TODO: Замах на будущее
             # self.predict_history[frame_number % 10] = results
             #
@@ -78,24 +81,27 @@ class Tracking:
         if save_video:
             out.release()
         cv2.destroyAllWindows()
-    
-    def is_person_entered(self, close: bool, history: State|None) -> bool:
+
+    @staticmethod
+    def is_person_entered(close: bool, history: State | None) -> bool:
         return history is None and close
-    
-    def is_person_exited(self, close: bool, history: State|None) -> bool:
+
+    @staticmethod
+    def is_person_exited(close: bool, history: State | None) -> bool:
         return close and history is not None and not history.close
-    
-    def is_person_passed(self, close: bool, history: State|None) -> bool:
+
+    @staticmethod
+    def is_person_passed(close: bool, history: State | None) -> bool:
         return not close and history is not None and history.close and not history.entering
-    
-    def check_action(self, close: bool, history: State|None) -> Action|None:
+
+    def check_action(self, close: bool, history: State | None) -> Action | None:
         if self.is_person_entered(close, history):
             return Action.Entered
         if self.is_person_exited(close, history):
-            return Action.Exited         
+            return Action.Exited
         if self.is_person_passed(close, history):
             return Action.Passed
-    
+
     def tracking(self, persons: list[People]):
         for person in persons:
             close = person.is_close()
@@ -118,45 +124,9 @@ class Tracking:
             else:
                 self.id_location[person.id_person].update(close)
 
-    def tracking2(self, results: Results):
-        """
-        TODO: документация
-        :param results:
-        :return:
-        """
-        people = parse_results(results)
-        for person in people:
-            current_location = person.check_how_close_to_door()
-            last_state, last_newborn = self.update_location_state(person, current_location)
-            if last_state:
-                self.handle_entry(person, last_state, last_newborn, current_location)
-        
-    def handle_entry(self, person: People, last_location: State, last_newborn: bool, current_location: Location):
-        nearest_door = person.nearest_door()
-        message = ""
-        # print(last_state.location, current_location)
-        if current_location is Location.Close and last_location is Location.Around:
-            self.in_out[1] += 1
-            message = "Я вышел!"
-        if not last_newborn and current_location is Location.Around and last_location is Location.Close:
-            self.in_out[1] -= 1
-            message = "Погодите-ка, я просто мимо проходил"
-        if message:
-            print(message, nearest_door.name)
-
-    def update_location_state(self, person: People, location: Location) -> Location:
-        if person.id_person not in self.id_location:
-            self.id_location[person.id_person] = State(location)
-            self.in_out[0] += 1
-            nearest_door = person.nearest_door()
-            print("Я родился!", nearest_door.name)
-            return None, None
-        last_location, last_newborn = self.id_location[person.id_person].location, self.id_location[person.id_person].newborn
-        self.id_location[person.id_person].update(location)
-        return last_location, last_newborn
-
-    def _tracking(self):
-        # TODO: Так будет работать логика будущего, сначала парсинг result, потом парсинг массива каждым методом
+    def _tracking2(self):
+        # TODO: Так будет работать логика будущего(наверное), сначала парсинг result,
+        #  потом парсинг массива каждым методом
         # pass
         frame_objects = np.empty(10, dtype=object)
         for i, frame_result in enumerate(self.predict_history):
@@ -166,10 +136,6 @@ class Tracking:
 
         # self.people_coming(person)
         # self._people_leave(frame_objects)
-
-    def _people_coming(self, person: People):
-        # TODO: Проверка, человек ушел
-        pass
 
     @staticmethod
     def _door_touch(peoples_from_frame) -> None:

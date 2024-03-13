@@ -45,7 +45,7 @@ class People:
         :rtype: bool
         """
         for door in Doors:
-            if dist(*door.center, *self.position) < Distances.Close:
+            if dist(*door.center, *self.position) < float(Distances.Close):
                 return True
         return False
 
@@ -61,36 +61,13 @@ class People:
         for door_center in door_centers:
             distance_to_door = dist(*self.position, *door_center)
             # print(distance_to_door, door_center, (self.center_x, self.center_y))
-            if distance_to_door < Distances.Close:
+            if distance_to_door < float(Distances.Close):
                 # self.print_person()
                 return Location.Close
-            elif distance_to_door < Distances.Around:
+            elif distance_to_door < float(Distances.Around):
                 return Location.Around
         return Location.Far
 
-@dataclass
-class State:
-    """
-    Состояние объекта People.
-    location: Location - расположение объекта
-    newborn: bool - является ли объект новорожденным (был ли он в этом кадре)
-    """
-    location: Location
-    newborn: bool = True
-
-    def update(self, new_location: Location):
-        """
-        Изменяет состояние объекта People.
-        Ставится новое местоположение, если оно изменилось, то убирается флаг newborn
-
-        :param new_location: Location - новое местоположение объекта
-        :return: None
-        """
-        if self.location is new_location:
-            return
-
-        self.location = new_location
-        self.newborn = False
 
 def parse_results(results: Results) -> list[People]:
     """
@@ -107,5 +84,5 @@ def parse_results(results: Results) -> list[People]:
     centers = boxes_center(boxes.xyxy)
     people = list()
     for box, center in zip(boxes, centers.astype(int)):
-        people.append(People(int(*box.id), int(*box.cls), *box.conf, tuple(center)))
+        people.append(People(int(*box.id), *box.cls, *box.conf, center))
     return people
