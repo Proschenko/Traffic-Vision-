@@ -20,7 +20,11 @@ class Location(Enum):
 
 
 class Distances(IntEnum):
-    # TODO: документация
+    """
+    Расстояние до двери:
+    Close   : близко
+    Around  : около
+    """
     Close = 54
     Around = 100
 
