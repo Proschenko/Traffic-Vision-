@@ -8,6 +8,13 @@ from misc import Distances, Location, boxes_center, dist
 
 @dataclass(frozen=True, slots=True)
 class People:
+    """
+    Объект для хранения информации о людях
+    id_person: int - ID человека
+    model_class: str - класс модели, т.е. один из (man,woman,kid,coach)
+    confidence: float - точность модели
+    position: tuple[int, int] - координаты центра объекта (x, y)
+    """
     id_person: int
     model_class: str
     confidence: float
@@ -52,14 +59,21 @@ class People:
 
 @dataclass
 class State:
+    """
+    Состояние объекта People.
+    location: Location - расположение объекта
+    newborn: bool - является ли объект новорожденным (был ли он в этом кадре)
+    """
     location: Location
     newborn: bool = True
 
     def update(self, new_location: Location):
         """
-        TODO: документация
-        :param new_location:
-        :return:
+        Изменяет состояние объекта People.
+        Ставится новое местоположение, если оно изменилось, то убирается флаг newborn
+
+        :param new_location: Location - новое местоположение объекта
+        :return: None
         """
         if self.location is new_location:
             return

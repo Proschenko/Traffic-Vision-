@@ -11,3 +11,4 @@ venv/
 
 /.env
 /Test output video/
+*.mp4
