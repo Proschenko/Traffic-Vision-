@@ -1,6 +1,7 @@
-from itertools import product
 from pprint import pprint
 from random import randrange
+from typing import Literal
+
 import redis
 
 # class Action(Enum):
@@ -12,6 +13,8 @@ import redis
 #     Woman = "woman"
 #     Kid = "kid"
 
+Action = Literal["enter", "exit"]
+Class_ = Literal["man", "woman", "kid"]
 
 class Redis:
     people_key = "ts_people"
@@ -21,11 +24,6 @@ class Redis:
         self.redis = redis.Redis(host='localhost', port=6379, decode_responses=True)
         self.timeseries = self.redis.ts()
     
-    def init_database(self):
-        for action, class_ in product(self.action, self.class_):
-            self.timeseries.create(f"{self.people_key}:{action}:{class_}",
-                                   labels={"action": action, "class_": class_})
-    
     def add_data(self, action: str, class_: str, time: int, count: int) -> bool:
         self.timeseries.add(f"{self.people_key}:{action}:{class_}", time, count,
                             labels={"action": action, "class_": class_})
@@ -33,9 +31,9 @@ class Redis:
     def get_data(self, action: str, class_: str, start: int, end: int) -> list[tuple[int]]:
         return self.timeseries.range(f"{self.people_key}:{action}:{class_}", start, end)
     
-    def get_count(self, start: int, end: int, action: str):
+    def get_count(self, start: int, end: int, action: Action):
         data = self.timeseries.mrange(start, end, [f"action={action}"], empty=True,
-                                     aggregation_type="last", bucket_size_msec=60000)
+                                      aggregation_type="last", bucket_size_msec=60000)
         res = dict()
         for (name, value), *_ in map(dict.items, data):
             _, _, class_ = name.rpartition(":")
@@ -43,10 +41,10 @@ class Redis:
         
         return res
     
-    def increments(self, action: str, class_: str, time: int):
+    def increments(self, action: Action, class_: Class_, time: int):
         self.timeseries.incrby(f"{self.people_key}:{action}:{class_}", 1, time)
         
-    def decrement(self, action: str, class_: str, time: int):
+    def decrement(self, action: Action, class_: Class_, time: int):
         self.timeseries.decrby(f"{self.people_key}:{action}:{class_}", 1, time)
 
 if __name__ == "__main__":
