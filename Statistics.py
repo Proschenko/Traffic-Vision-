@@ -26,7 +26,7 @@ def hist_pool_load(time: list, in_people: list, out_people: list) -> None:
         hourly_out[hour] += out_val
     
     hours = list(hourly_in.keys())
-    values = [hourly_in[hour] for hour in hours]
+    values = [hourly_in[hour]-hourly_out[hour] for hour in hours]
 
     plt.bar(hours, values, color='blue', alpha=0.7, label='Вошло людей')
     plt.xlabel('Часы')
@@ -35,5 +35,5 @@ def hist_pool_load(time: list, in_people: list, out_people: list) -> None:
     plt.show()
     
 if __name__ == "__main__":
-    hist_pool_load(["00-00-00", "00-10-00", "02-00-00"], [1, 2, 3], [2, 3, 4])
+    hist_pool_load(["00-00-00", "00-10-00", "02-00-00"], [9, 12, 15], [2, 6, 9])
     
