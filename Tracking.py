@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from enum import Enum, auto
 
 import cv2
@@ -6,6 +7,7 @@ import numpy as np
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 
+from DataBase import Redis
 from Debug_drawer import draw_debug
 from misc import Location
 from People import People, parse_results
@@ -36,6 +38,7 @@ class Tracking:
         self.id_location: dict[int, State] = dict()
         self.predict_history = np.empty(10, dtype=Results)
         self.in_out = [0, 0]
+        self.redis = Redis()
 
     def process_video_with_tracking(self, model: YOLO, video_path: str, show_video=True, save_path=None):
         """
@@ -53,11 +56,15 @@ class Tracking:
                       "imgsz": 640, "verbose": False,
                       "tracker": "botsort.yaml",
                       "vid_stride": 7}
+        fps = 25
+        
+        start_time = datetime.now()
+        seconds_per_track = 1/fps * model_args["vid_stride"]
+        delta_time = timedelta(seconds=seconds_per_track)
 
         for frame_number, results in enumerate(model.track(video_path, stream=True, **model_args)):
             if save_video:
                 if out is None:
-                    fps = 25
                     shape = results.orig_shape
                     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                     out = cv2.VideoWriter(save_path, fourcc, fps, shape)
@@ -69,8 +76,9 @@ class Tracking:
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
 
+            now = start_time + delta_time*frame_number
             persons = parse_results(results)
-            self.tracking(persons)
+            self.tracking(persons, now)
 
             # TODO: Замах на будущее
             # self.predict_history[frame_number % 10] = results
@@ -102,7 +110,7 @@ class Tracking:
         if self.is_person_passed(close, history):
             return Action.Passed
 
-    def tracking(self, persons: list[People]):
+    def tracking(self, persons: list[People], time: datetime):
         # TODO: Добавить запись в бд при обнаружении
         for person in persons:
             close = person.is_close()
@@ -112,12 +120,15 @@ class Tracking:
                 case Action.Entered:
                     # print("Я родилсо")
                     self.in_out[0] += 1
+                    self.redis.increment("enter", "man", time)
                 case Action.Exited:
                     # print("Я ухожук")
                     self.in_out[1] += 1
+                    self.redis.increment("exit", "man", time)
                 case Action.Passed:
                     # print("Я передумал")
                     self.in_out[1] -= 1
+                    self.redis.decrement("exit", "man", time)
             if action is not None:
                 # TODO: Надо подумать, как сделать так, чтобы в бд не записывался момент сначала со входом(+1),
                 #  а потом с прохождением мимо(-1). В будущем это будет создавать конфликт. Возможно стоит сделать

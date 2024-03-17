@@ -1,21 +1,21 @@
+from datetime import datetime, timedelta
 from pprint import pprint
-from random import randrange
+from random import random, randrange
+from time import mktime
 from typing import Literal
 
 import redis
 
-# class Action(Enum):
-#     Entered = "entered"
-#     Exited = "exited"
-
-# class Class_(Enum):
-#     Man = "man"
-#     Woman = "woman"
-#     Kid = "kid"
-
 Action = Literal["enter", "exit"]
 Class_ = Literal["man", "woman", "kid"]
 
+unix_timestamp = int
+
+def datetime_to_unix(time: datetime) -> unix_timestamp:
+    return int(mktime(time.timetuple()) * 1000)
+
+def unix_to_datetime(time: int) -> datetime:
+    return datetime.fromtimestamp(time / 1000)
 
 class Redis:
     people_key = "ts_people"
@@ -26,39 +26,65 @@ class Redis:
         self.redis = redis.Redis(host='localhost', port=6379, decode_responses=True)
         self.timeseries = self.redis.ts()
 
-    def add_data(self, action: str, class_: str, time: int, count: int) -> bool:
+    def add_data(self, action: str, class_: str, time: datetime, count: int) -> bool:
+        time = datetime_to_unix(time)
         self.timeseries.add(f"{self.people_key}:{action}:{class_}", time, count,
                             labels={"action": action, "class_": class_})
 
-    def get_data(self, action: str, class_: str, start: int, end: int) -> list[tuple[int]]:
+    def get_data(self, action: str, class_: str, start: datetime, end: datetime) -> list[tuple[unix_timestamp, int]]:
+        start, end = map(datetime_to_unix, (start, end))
         return self.timeseries.range(f"{self.people_key}:{action}:{class_}", start, end)
 
-    def get_count(self, start: int, end: int, action: Action):
+    def get_count(self, start: datetime, end: datetime, 
+                  action: Action, step: int) -> dict[str, list[tuple[unix_timestamp, int]]]:
+        start, end = map(datetime_to_unix, (start, end))
+        bucket = int(step * 1000)
+
         data = self.timeseries.mrange(start, end, [f"action={action}"], empty=True,
-                                      aggregation_type="last", bucket_size_msec=60000)
+                                      aggregation_type="last", bucket_size_msec=bucket)
         res = dict()
         for (name, value), *_ in map(dict.items, data):
             _, _, class_ = name.rpartition(":")
             res[class_] = value[1]
-
         return res
 
-    def increments(self, action: Action, class_: Class_, time: int):
-        self.timeseries.incrby(f"{self.people_key}:{action}:{class_}", 1, time)
+    def increment(self, action: Action, class_: Class_, time: datetime):
+        time = datetime_to_unix(time)
+        self.timeseries.incrby(f"{self.people_key}:{action}:{class_}", 1, time,
+                               labels={"action": action, "class_": class_})
 
-    def decrement(self, action: Action, class_: Class_, time: int):
-        self.timeseries.decrby(f"{self.people_key}:{action}:{class_}", 1, time)
+    def decrement(self, action: Action, class_: Class_, time: datetime):
+        time = datetime_to_unix(time)
+        self.timeseries.decrby(f"{self.people_key}:{action}:{class_}", 1, time,
+                               labels={"action": action, "class_": class_})
+
+    def remove_all_data(self, force=False):
+        if force or input("Вы уверенны что хотите удалить все данные из базы? [y/n]: ") == 'y':
+            for key in self.redis.scan_iter("*"):
+                self.redis.delete(key)
+            return
+        print("Отмена")
+    
+    def create_test_data(self):
+        if input("Вы уверенны что хотите наполнить базу фальшивыми данными? [y/n]: ") != 'y':
+            print("Отмена")
+            return
+        self.remove_all_data(True)
+        start_time = datetime(2000, 6, 15)
+        delta_time = timedelta(seconds=10)
+        passed = 0
+        for _ in range(1000):
+            passed += randrange(50)
+            now = start_time + delta_time*passed
+            if random() < 0.25:
+                self.decrement("exit", "man", now)
+            else:
+                self.increment("exit", "man", now)
 
 
 if __name__ == "__main__":
     db = Redis()
-    for key in db.redis.scan_iter("*"):
-        db.redis.delete(key)
-    for i in range(10):
-        time_ = randrange(10 ** 5, 10 ** 5 * 2)
-        count = randrange(1, 10)
-        db.add_data("enter", "woman", time_, count)
-        db.add_data("enter", "man", time_, count)
-        db.add_data("enter", "kid", time_, count)
+    db.remove_all_data()
+    db.create_test_data()
 
-    pprint(db.get_count("-", "+", "enter"))
+    pprint(db.get_count(datetime.fromtimestamp(0), datetime.now(), "exit"))
