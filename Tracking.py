@@ -103,6 +103,7 @@ class Tracking:
             return Action.Passed
 
     def tracking(self, persons: list[People]):
+        # TODO: Добавить запись в бд при обнаружении
         for person in persons:
             close = person.is_close()
             history = self.id_location.get(person.id_person, None)
@@ -118,12 +119,17 @@ class Tracking:
                     # print("Я передумал")
                     self.in_out[1] -= 1
             if action is not None:
+                # TODO: Надо подумать, как сделать так, чтобы в бд не записывался момент сначала со входом(+1),
+                #  а потом с прохождением мимо(-1). В будущем это будет создавать конфликт. Возможно стоит сделать
+                #  отложенную запись (Если считаем что человек зашел, запоминаем, и смотрим вперед на три кадра
+                #  допустим, если за 3 кадра не произошло прохождение мимо, то записываем в бд (идея))
                 print(f"На данный момент Вышло: {self.in_out[1]} Зашло: {self.in_out[0]}")
             if history is None:
                 self.id_location[person.id_person] = State(close, action is Action.Entered)
             else:
                 self.id_location[person.id_person].update(close)
 
+    # region Пусть пока подумает над своим поведением
     def _tracking2(self):
         # TODO: Так будет работать логика будущего(наверное), сначала парсинг result,
         #  потом парсинг массива каждым методом
@@ -162,6 +168,8 @@ class Tracking:
                     print("Мама что произошло за за 7 фреймов")
                 person_door_relationship[person_id] = location_person
 
+
+    # endregion
 
 if __name__ == "__main__":
     pass
