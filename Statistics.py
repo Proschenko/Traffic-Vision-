@@ -1,16 +1,19 @@
 import matplotlib.pyplot as plt
 from datetime import datetime
 
-def water_spilled(people: list) -> int:
+def water_spilled(people: list | int) -> int:
     """
     Возвращает количество воды, что вытеснило N человек
     пока 50 литров на человека
-    :param people: Список людей
+    :param people: Список людей или количество людей
     :type people: list
     :return: Количество воды в литрах на N людей
     :rtype: int
     """
-    return len(people) * 50 
+    if type(people) == int:
+        return people * 50
+    if type(people) == list:
+        return len(people) * 50
 
 def hist_pool_load(time: list, in_people: list, out_people: list) -> None:
     times = [datetime.strptime(time_str, "%H-%M-%S") for time_str in time]
@@ -28,10 +31,10 @@ def hist_pool_load(time: list, in_people: list, out_people: list) -> None:
     hours = list(hourly_in.keys())
     values = [hourly_in[hour]-hourly_out[hour] for hour in hours]
 
-    plt.bar(hours, values, color='blue', alpha=0.7, label='Вошло людей')
+    plt.bar(hours, values, color='blue', alpha=0.7, label='Люди')
     plt.xlabel('Часы')
     plt.ylabel('Количество людей')
-    plt.title('Гистограмма входа и выхода людей по часам')
+    plt.title('Гистограмма загруженности бассейна по часам')
     plt.show()
     
 if __name__ == "__main__":
