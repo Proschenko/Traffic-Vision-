@@ -7,7 +7,7 @@ from DataBase import Redis, unix_to_datetime
 
 redis = Redis()
 
-start, end = datetime(2024, 3, 17), datetime(2024, 3, 18)
+start, end = datetime(2000, 6, 15), datetime(2000, 6, 15, 23)
 data = redis.get_count(start, end, "exit", 60)["man"]
 time, count = zip(*data)
 count = np.array(count)

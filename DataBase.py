@@ -74,12 +74,20 @@ class Redis:
         delta_time = timedelta(seconds=10)
         passed = 0
         for _ in range(1000):
-            passed += randrange(50)
+            passed += 25
             now = start_time + delta_time*passed
             if random() < 0.25:
                 self.decrement("exit", "man", now)
             else:
                 self.increment("exit", "man", now)
+        passed = 0
+        for _ in range(1000):
+            passed += 25
+            now = start_time + delta_time*passed
+            if random() < 0.25:
+                self.decrement("enter", "man", now)
+            else:
+                self.increment("enter", "man", now)
 
 
 if __name__ == "__main__":
@@ -87,4 +95,4 @@ if __name__ == "__main__":
     db.remove_all_data()
     db.create_test_data()
 
-    pprint(db.get_count(datetime.fromtimestamp(0), datetime.now(), "exit"))
+    pprint(db.get_count(datetime.fromtimestamp(0), datetime.now(), "exit",1))
