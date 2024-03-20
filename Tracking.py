@@ -57,9 +57,9 @@ class Tracking:
                       "tracker": "botsort.yaml",
                       "vid_stride": 7}
         fps = 25
-        
+
         start_time = datetime.now()
-        seconds_per_track = 1/fps * model_args["vid_stride"]
+        seconds_per_track = 1 / fps * model_args["vid_stride"]
         delta_time = timedelta(seconds=seconds_per_track)
 
         for frame_number, results in enumerate(model.track(video_path, stream=True, **model_args)):
@@ -76,7 +76,7 @@ class Tracking:
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
 
-            now = start_time + delta_time*frame_number
+            now = start_time + delta_time * frame_number
             persons = parse_results(results)
             self.tracking(persons, now)
 
@@ -174,8 +174,8 @@ class Tracking:
                     print("Мама что произошло за за 7 фреймов")
                 person_door_relationship[person_id] = location_person
 
-
     # endregion
+
 
 if __name__ == "__main__":
     pass
