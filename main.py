@@ -22,7 +22,7 @@ def main():
     input_video = r"D:\я у мамы программист\3 курс 2 семестр IT-проекты\Traffic-Vision-\Test output video\output_9.mp4"
     # input_video = r"D:\я у мамы программист\3 курс 2 семестр IT-проекты\Traffic-Vision-\Test input video\test.mp4"
 
-    tracking.process_video_with_tracking(model, input_video, show_video=True)
+    tracking.process_video_with_tracking(model, input_video, show_video=True, save_path="result_video.mp4")
 
 
 if __name__ == "__main__":

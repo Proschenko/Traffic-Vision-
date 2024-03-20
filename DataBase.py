@@ -11,11 +11,14 @@ Class_ = Literal["man", "woman", "kid"]
 
 unix_timestamp = int
 
+
 def datetime_to_unix(time: datetime) -> unix_timestamp:
     return int(mktime(time.timetuple()) * 1000)
 
+
 def unix_to_datetime(time: int) -> datetime:
     return datetime.fromtimestamp(time / 1000)
+
 
 class Redis:
     people_key = "ts_people"
@@ -35,7 +38,7 @@ class Redis:
         start, end = map(datetime_to_unix, (start, end))
         return self.timeseries.range(f"{self.people_key}:{action}:{class_}", start, end)
 
-    def get_count(self, start: datetime, end: datetime, 
+    def get_count(self, start: datetime, end: datetime,
                   action: Action, step: int) -> dict[str, list[tuple[unix_timestamp, int]]]:
         start, end = map(datetime_to_unix, (start, end))
         bucket = int(step * 1000)
@@ -64,7 +67,7 @@ class Redis:
                 self.redis.delete(key)
             return
         print("Отмена")
-    
+
     def create_test_data(self):
         if input("Вы уверенны что хотите наполнить базу фальшивыми данными? [y/n]: ") != 'y':
             print("Отмена")
@@ -75,7 +78,7 @@ class Redis:
         passed = 0
         for _ in range(1000):
             passed += randrange(50)
-            now = start_time + delta_time*passed
+            now = start_time + delta_time * passed
             if random() < 0.25:
                 self.decrement("exit", "man", now)
             else:

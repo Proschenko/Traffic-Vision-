@@ -111,7 +111,6 @@ class Tracking:
             return Action.Passed
 
     def tracking(self, persons: list[People], time: datetime):
-        # TODO: Добавить запись в бд при обнаружении
         for person in persons:
             close = person.is_close()
             history = self.id_location.get(person.id_person, None)
@@ -130,10 +129,6 @@ class Tracking:
                     self.in_out[1] -= 1
                     self.redis.decrement("exit", "man", time)
             if action is not None:
-                # TODO: Надо подумать, как сделать так, чтобы в бд не записывался момент сначала со входом(+1),
-                #  а потом с прохождением мимо(-1). В будущем это будет создавать конфликт. Возможно стоит сделать
-                #  отложенную запись (Если считаем что человек зашел, запоминаем, и смотрим вперед на три кадра
-                #  допустим, если за 3 кадра не произошло прохождение мимо, то записываем в бд (идея))
                 print(f"На данный момент Вышло: {self.in_out[1]} Зашло: {self.in_out[0]}")
             if history is None:
                 self.id_location[person.id_person] = State(close, action is Action.Entered)

@@ -7,8 +7,8 @@ from DataBase import Redis, unix_to_datetime
 
 redis = Redis()
 
-start, end = datetime(2024, 3, 17), datetime(2024, 3, 18)
-data = redis.get_count(start, end, "exit", 60)["man"]
+start, end = datetime(2024, 3, 17), datetime(2024, 3, 21)
+data = redis.get_count(start, end, "enter", 60)["man"]
 time, count = zip(*data)
 count = np.array(count)
 delta_count = np.diff(count, 1)
