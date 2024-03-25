@@ -75,6 +75,9 @@ class Tracking:
             ret, frame = cap.read()
             if not ret:
                 break
+            
+            if frame_number % model_args["vid_stride"] != 0:
+                continue
 
             # Process the frame with your YOLO model
             results = model.track(frame, **model_args)[0]
