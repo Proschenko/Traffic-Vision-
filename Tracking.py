@@ -40,11 +40,13 @@ class Tracking:
         self.in_out = [0, 0]
         self.redis = Redis()
 
-    def process_video_with_tracking(self, model: YOLO, video_path: str, show_video=True, save_path=None):
+    import cv2
+
+    def process_video_with_tracking(self, model: YOLO, rtsp_url: str, show_video=True, save_path=None):
         """
         TODO: документация
         :param model:
-        :param video_path:
+        :param rtsp_url:
         :param show_video:
         :param save_path:
         :return:
@@ -58,11 +60,21 @@ class Tracking:
                       "vid_stride": 7}
         fps = 25
 
+        cap = cv2.VideoCapture(rtsp_url)
+
         start_time = datetime.now()
         seconds_per_track = 1 / fps * model_args["vid_stride"]
         delta_time = timedelta(seconds=seconds_per_track)
 
-        for frame_number, results in enumerate(model.track(video_path, stream=True, **model_args)):
+        while cap.isOpened():
+            frame_number = 0
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            # Process the frame with your YOLO model
+            results = model.track(frame, **model_args)
+
             if save_video:
                 if out is None:
                     shape = results.orig_shape
@@ -71,21 +83,17 @@ class Tracking:
                 out.write(results.plot())
 
             if show_video:
-                frame = draw_debug(results, draw_lines=False)
+                # frame = draw_debug(results, draw_lines=False)
                 cv2.imshow("frame", frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
 
-            now = start_time + delta_time * frame_number
-            persons = parse_results(results)
-            self.tracking(persons, now)
+            # now = start_time + delta_time * frame_number
+            # persons = parse_results(results)
+            # self.tracking(persons, now)
+            frame_number += 1
 
-            # TODO: Замах на будущее
-            # self.predict_history[frame_number % 10] = results
-            #
-            # if frame_number % 100 == 0 and frame_number != 0:
-            #     self._tracking()
-
+        cap.release()
         if save_video:
             out.release()
         cv2.destroyAllWindows()
