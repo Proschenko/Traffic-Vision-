@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum, auto
 from itertools import count, takewhile
 
@@ -54,38 +54,35 @@ class Tracking:
 
         model_args = {"iou": 0.4, "conf": 0.5, "persist": True,
                       "imgsz": 640, "verbose": False,
-                      "tracker": "botsort.yaml",
-                      "vid_stride": 7}
-        frame_step = model_args["vid_stride"]
+                      "tracker": "botsort.yaml"}
+        frame_step = 4
 
         cap = cv2.VideoCapture(rtsp_url)
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 25*8)
+        position_ms = cap.get(cv2.CAP_PROP_POS_MSEC)
+        start_time = datetime.now() - timedelta(milliseconds=position_ms)
 
         if not cap.isOpened():
             raise Exception("Error: Could not open video file.")
 
         fps = int(cap.get(cv2.CAP_PROP_FPS))
 
-        before = datetime.now()
         for frame_number in takewhile(lambda _: cap.isOpened(), count()):
             ret, frame = cap.read()
-            now = datetime.now()
             if not ret:
                 break
             
             if frame_number % frame_step != 0:
                 continue
-            
-            elapsed = (now-before).microseconds / 1_000_000
-            fps_now = frame_step/elapsed if elapsed else float('inf')
-            if fps_now < fps*0.9:
-                print(f"Warning! Low fps: {fps_now:0.2f}")
-            before = now
+            frame = frame[:300, :950]
 
             # Process the frame with your YOLO model
             results = self.model.track(frame, **model_args)[0]
             
             persons = self.parse_results(results)
-            self.tracking(persons, now)
+            position_ms = cap.get(cv2.CAP_PROP_POS_MSEC)
+            frame_time = start_time + timedelta(milliseconds=position_ms)
+            self.tracking(persons, frame_time)
 
             if save_video or show_video:
                 debug_frame = draw_debug(results, persons, draw_lines=False)
@@ -177,7 +174,7 @@ class Tracking:
         # pass
         frame_objects = np.empty(10, dtype=object)
         for i, frame_result in enumerate(self.predict_history):
-            frame_objects[i] = parse_results(frame_result)
+            frame_objects[i] = self.parse_results(frame_result)
 
         self._door_touch(frame_objects)
 
