@@ -38,7 +38,7 @@ class Tracking:
         self.id_location: dict[int, State] = dict()
         self.predict_history = np.empty(10, dtype=Results)
         self.in_out = [0, 0]
-        self.redis = Redis()
+        # self.redis = Redis()
 
     import cv2
 
@@ -58,6 +58,7 @@ class Tracking:
                       "imgsz": 640, "verbose": False,
                       "tracker": "botsort.yaml",
                       "vid_stride": 7}
+        # fgs можно поменять чтобы замедлить видео
         fps = 25
 
         cap = cv2.VideoCapture(rtsp_url)
@@ -77,7 +78,7 @@ class Tracking:
 
             if save_video:
                 if out is None:
-                    shape = results.orig_shape
+                    shape = results.orig_shape[::-1]
                     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                     out = cv2.VideoWriter(save_path, fourcc, fps, shape)
                 out.write(results.plot())
