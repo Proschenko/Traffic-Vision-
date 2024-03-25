@@ -40,9 +40,7 @@ class Tracking:
         self.id_location: dict[int, State] = dict()
         self.predict_history = np.empty(10, dtype=Results)
         self.in_out = [0, 0]
-        # self.redis = Redis()
-
-    import cv2
+        self.redis = Redis()
 
     def process_video_with_tracking(self, model: YOLO, rtsp_url: str, show_video=True, save_path=None):
         """
@@ -73,6 +71,7 @@ class Tracking:
             if not cap.isOpened():
                 break
             ret, frame = cap.read()
+            now = datetime.now()
             if not ret:
                 break
             
@@ -95,9 +94,8 @@ class Tracking:
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
 
-            # now = start_time + delta_time * frame_number
-            # persons = parse_results(results)
-            # self.tracking(persons, now)
+            persons = parse_results(results)
+            self.tracking(persons, now)
             frame_number += 1
 
         cap.release()
