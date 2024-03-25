@@ -25,7 +25,7 @@ def main():
     # input_video = 'rtsp://admin:ytn z yt uhb,@192.168.1.64:554/Streaming/Channels/101'
     input_video = 'rtsp://rtsp:EL3gS7XV@80.91.19.85:58002/Streaming/Channels/101'
 
-    tracking.process_video_with_tracking(model, input_video, show_video=True)
+    tracking.process_video_with_tracking(model, input_video, save_path="result_video.mp4")
 
 
 if __name__ == "__main__":

@@ -1,11 +1,10 @@
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum, auto
-from itertools import count
+from itertools import count, takewhile
 
 import cv2
 import numpy as np
-from tqdm import tqdm
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 
@@ -58,45 +57,43 @@ class Tracking:
                       "imgsz": 640, "verbose": False,
                       "tracker": "botsort.yaml",
                       "vid_stride": 7}
-        # fgs можно поменять чтобы замедлить видео
-        fps = 25
+        frame_step = model_args["vid_stride"]
 
         cap = cv2.VideoCapture(rtsp_url)
 
-        start_time = datetime.now()
-        seconds_per_track = 1 / fps * model_args["vid_stride"]
-        delta_time = timedelta(seconds=seconds_per_track)
+        if not cap.isOpened():
+            raise Exception("Error: Could not open video file.")
 
-        for frame_number in tqdm(count()):
-            if not cap.isOpened():
-                break
+        fps = int(cap.get(cv2.CAP_PROP_FPS))
+
+        for frame_number in takewhile(lambda _: cap.isOpened(), count()):
             ret, frame = cap.read()
             now = datetime.now()
             if not ret:
                 break
             
-            if frame_number % model_args["vid_stride"] != 0:
+            if frame_number % frame_step != 0:
                 continue
 
             # Process the frame with your YOLO model
             results = model.track(frame, **model_args)[0]
 
             if save_video:
+                debug_frame = draw_debug(results, draw_lines=False)
                 if out is None:
-                    shape = results.orig_shape[::-1]
+                    height, width, _ = debug_frame.shape
                     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                    out = cv2.VideoWriter(save_path, fourcc, fps, shape)
-                out.write(results.plot())
+                    out = cv2.VideoWriter(save_path, fourcc, fps//frame_step, (width, height))
+                out.write(debug_frame)
 
             if show_video:
-                frame = draw_debug(results, draw_lines=False)
-                cv2.imshow("frame", frame)
+                debug_frame = draw_debug(results, draw_lines=False)
+                cv2.imshow("frame", debug_frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
 
             persons = parse_results(results)
             self.tracking(persons, now)
-            frame_number += 1
 
         cap.release()
         if save_video:
