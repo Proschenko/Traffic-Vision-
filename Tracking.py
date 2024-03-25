@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum, auto
+from itertools import count
 
 import cv2
 import numpy as np
+from tqdm import tqdm
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 
@@ -67,14 +69,15 @@ class Tracking:
         seconds_per_track = 1 / fps * model_args["vid_stride"]
         delta_time = timedelta(seconds=seconds_per_track)
 
-        while cap.isOpened():
-            frame_number = 0
+        for frame_number in tqdm(count()):
+            if not cap.isOpened():
+                break
             ret, frame = cap.read()
             if not ret:
                 break
 
             # Process the frame with your YOLO model
-            results = model.track(frame, **model_args)
+            results = model.track(frame, **model_args)[0]
 
             if save_video:
                 if out is None:
@@ -84,7 +87,7 @@ class Tracking:
                 out.write(results.plot())
 
             if show_video:
-                # frame = draw_debug(results, draw_lines=False)
+                frame = draw_debug(results, draw_lines=False)
                 cv2.imshow("frame", frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
