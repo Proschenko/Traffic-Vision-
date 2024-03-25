@@ -65,6 +65,7 @@ class Tracking:
 
         fps = int(cap.get(cv2.CAP_PROP_FPS))
 
+        before = datetime.now()
         for frame_number in takewhile(lambda _: cap.isOpened(), count()):
             ret, frame = cap.read()
             now = datetime.now()
@@ -73,6 +74,12 @@ class Tracking:
             
             if frame_number % frame_step != 0:
                 continue
+            
+            elapsed = (now-before).microseconds / 1_000_000
+            fps_now = frame_step/elapsed if elapsed else float('inf')
+            if fps_now < fps*0.9:
+                print(f"Warning! Low fps: {fps_now:0.2f}")
+            before = now
 
             # Process the frame with your YOLO model
             results = self.model.track(frame, **model_args)[0]
