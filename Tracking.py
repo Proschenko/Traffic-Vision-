@@ -10,8 +10,8 @@ from ultralytics.engine.results import Results
 
 from DataBase import Redis
 from Debug_drawer import draw_debug
-from misc import Location
-from People import People, parse_results
+from misc import Location, boxes_center
+from People import People
 
 
 class Action(Enum):
@@ -33,15 +33,14 @@ class State:
 
 
 class Tracking:
-    def __init__(self) -> None:
-        self.image_width = 1920
-        self.image_height = 1080
+    def __init__(self, model: YOLO) -> None:
+        self.model = model
         self.id_location: dict[int, State] = dict()
         self.predict_history = np.empty(10, dtype=Results)
         self.in_out = [0, 0]
         self.redis = Redis()
 
-    def process_video_with_tracking(self, model: YOLO, rtsp_url: str, show_video=True, save_path=None):
+    def process_video_with_tracking(self, rtsp_url: str, show_video=True, save_path=None):
         """
         TODO: документация
         :param model:
@@ -76,10 +75,15 @@ class Tracking:
                 continue
 
             # Process the frame with your YOLO model
-            results = model.track(frame, **model_args)[0]
+            results = self.model.track(frame, **model_args)[0]
+            
+            persons = self.parse_results(results)
+            self.tracking(persons, now)
+
+            if save_video or show_video:
+                debug_frame = draw_debug(results, persons, draw_lines=False)
 
             if save_video:
-                debug_frame = draw_debug(results, draw_lines=False)
                 if out is None:
                     height, width, _ = debug_frame.shape
                     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -87,13 +91,9 @@ class Tracking:
                 out.write(debug_frame)
 
             if show_video:
-                debug_frame = draw_debug(results, draw_lines=False)
                 cv2.imshow("frame", debug_frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
-
-            persons = parse_results(results)
-            self.tracking(persons, now)
 
         cap.release()
         if save_video:
@@ -129,21 +129,39 @@ class Tracking:
                 case Action.Entered:
                     # print("Я родилсо")
                     self.in_out[0] += 1
-                    self.redis.increment("enter", "man", time)
+                    self.redis.increment("enter", person.model_class, time)
                 case Action.Exited:
                     # print("Я ухожук")
                     self.in_out[1] += 1
-                    self.redis.increment("exit", "man", time)
+                    self.redis.increment("exit", person.model_class, time)
                 case Action.Passed:
                     # print("Я передумал")
                     self.in_out[1] -= 1
-                    self.redis.decrement("exit", "man", time)
+                    self.redis.decrement("exit", person.model_class, time)
             if action is not None:
                 print(f"На данный момент Вышло: {self.in_out[1]} Зашло: {self.in_out[0]}")
             if history is None:
                 self.id_location[person.id_person] = State(close, action is Action.Entered)
             else:
                 self.id_location[person.id_person].update(close)
+
+    def parse_results(self, results: Results) -> list[People]:
+        """
+        Создаёт список объектов People на основе result
+
+        :param results: Результат обнаружения объектов
+        :type results: Results
+        :return: Список объектов People
+        :rtype: list[People]
+        """
+        if results.boxes.id is None:
+            return list()
+        boxes = results.boxes.numpy()
+        centers = boxes_center(boxes.xyxy)
+        people = list()
+        for box, center in zip(boxes, centers.astype(int)):
+            people.append(People(int(*box.id), self.model.names[int(*box.cls)], *box.conf, center))
+        return people
 
     # region Пусть пока подумает над своим поведением
     def _tracking2(self):
