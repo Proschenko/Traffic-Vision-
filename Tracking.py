@@ -1,18 +1,17 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum, auto
-from itertools import count
+from itertools import count, takewhile
 
 import cv2
 import numpy as np
-from tqdm import tqdm
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 
 from DataBase import Redis
 from Debug_drawer import draw_debug
-from misc import Location
-from People import People, parse_results
+from misc import Location, boxes_center
+from People import People
 
 
 class Action(Enum):
@@ -34,17 +33,14 @@ class State:
 
 
 class Tracking:
-    def __init__(self) -> None:
-        self.image_width = 1920
-        self.image_height = 1080
+    def __init__(self, model: YOLO) -> None:
+        self.model = model
         self.id_location: dict[int, State] = dict()
         self.predict_history = np.empty(10, dtype=Results)
         self.in_out = [0, 0]
-        # self.redis = Redis()
+        self.redis = Redis()
 
-    import cv2
-
-    def process_video_with_tracking(self, model: YOLO, rtsp_url: str, show_video=True, save_path=None):
+    def process_video_with_tracking(self, rtsp_url: str, show_video=True, save_path=None):
         """
         TODO: документация
         :param model:
@@ -58,47 +54,50 @@ class Tracking:
 
         model_args = {"iou": 0.4, "conf": 0.5, "persist": True,
                       "imgsz": 640, "verbose": False,
-                      "tracker": "botsort.yaml",
-                      "vid_stride": 7}
-        # fgs можно поменять чтобы замедлить видео
-        fps = 25
+                      "tracker": "botsort.yaml"}
+        frame_step = 4
 
         cap = cv2.VideoCapture(rtsp_url)
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 25*8)
+        position_ms = cap.get(cv2.CAP_PROP_POS_MSEC)
+        start_time = datetime.now() - timedelta(milliseconds=position_ms)
 
-        start_time = datetime.now()
-        seconds_per_track = 1 / fps * model_args["vid_stride"]
-        delta_time = timedelta(seconds=seconds_per_track)
+        if not cap.isOpened():
+            raise Exception("Error: Could not open video file.")
 
-        for frame_number in tqdm(count()):
-            if not cap.isOpened():
-                break
+        fps = int(cap.get(cv2.CAP_PROP_FPS))
+
+        for frame_number in takewhile(lambda _: cap.isOpened(), count()):
             ret, frame = cap.read()
             if not ret:
                 break
             
-            if frame_number % model_args["vid_stride"] != 0:
+            if frame_number % frame_step != 0:
                 continue
+            frame = frame[:300, :950]
 
             # Process the frame with your YOLO model
-            results = model.track(frame, **model_args)[0]
+            results = self.model.track(frame, **model_args)[0]
+            
+            persons = self.parse_results(results)
+            position_ms = cap.get(cv2.CAP_PROP_POS_MSEC)
+            frame_time = start_time + timedelta(milliseconds=position_ms)
+            self.tracking(persons, frame_time)
+
+            if save_video or show_video:
+                debug_frame = draw_debug(results, persons, draw_lines=False)
 
             if save_video:
                 if out is None:
-                    shape = results.orig_shape[::-1]
+                    height, width, _ = debug_frame.shape
                     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                    out = cv2.VideoWriter(save_path, fourcc, fps, shape)
-                out.write(results.plot())
+                    out = cv2.VideoWriter(save_path, fourcc, fps//frame_step, (width, height))
+                out.write(debug_frame)
 
             if show_video:
-                frame = draw_debug(results, draw_lines=False)
-                cv2.imshow("frame", frame)
+                cv2.imshow("frame", debug_frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
-
-            # now = start_time + delta_time * frame_number
-            # persons = parse_results(results)
-            # self.tracking(persons, now)
-            frame_number += 1
 
         cap.release()
         if save_video:
@@ -134,21 +133,39 @@ class Tracking:
                 case Action.Entered:
                     # print("Я родилсо")
                     self.in_out[0] += 1
-                    self.redis.increment("enter", "man", time)
+                    self.redis.increment("enter", person.model_class, time)
                 case Action.Exited:
                     # print("Я ухожук")
                     self.in_out[1] += 1
-                    self.redis.increment("exit", "man", time)
+                    self.redis.increment("exit", person.model_class, time)
                 case Action.Passed:
                     # print("Я передумал")
                     self.in_out[1] -= 1
-                    self.redis.decrement("exit", "man", time)
+                    self.redis.decrement("exit", person.model_class, time)
             if action is not None:
                 print(f"На данный момент Вышло: {self.in_out[1]} Зашло: {self.in_out[0]}")
             if history is None:
                 self.id_location[person.id_person] = State(close, action is Action.Entered)
             else:
                 self.id_location[person.id_person].update(close)
+
+    def parse_results(self, results: Results) -> list[People]:
+        """
+        Создаёт список объектов People на основе result
+
+        :param results: Результат обнаружения объектов
+        :type results: Results
+        :return: Список объектов People
+        :rtype: list[People]
+        """
+        if results.boxes.id is None:
+            return list()
+        boxes = results.boxes.numpy()
+        centers = boxes_center(boxes.xyxy)
+        people = list()
+        for box, center in zip(boxes, centers.astype(int)):
+            people.append(People(int(*box.id), self.model.names[int(*box.cls)], *box.conf, center))
+        return people
 
     # region Пусть пока подумает над своим поведением
     def _tracking2(self):
@@ -157,7 +174,7 @@ class Tracking:
         # pass
         frame_objects = np.empty(10, dtype=object)
         for i, frame_result in enumerate(self.predict_history):
-            frame_objects[i] = parse_results(frame_result)
+            frame_objects[i] = self.parse_results(frame_result)
 
         self._door_touch(frame_objects)
 
