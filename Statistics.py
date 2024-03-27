@@ -55,8 +55,8 @@ def hist_pool_load(start_date: datetime, end_date: datetime, gender: Class_ = No
     plt.xlabel('Часы')
     plt.ylabel('Количество людей')
     plt.title('Гистограмма загруженности бассейна по часам')
-    plt.show()
-
+    # plt.show()
+    return plt
 
 if __name__ == "__main__":
     hist_pool_load(datetime(2000, 6, 15, 0), datetime(2000, 6, 15, 15), "woman")
