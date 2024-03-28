@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from pprint import pprint
-from random import random, randrange
+from random import random
 from time import mktime
 from typing import Literal
 
@@ -29,7 +29,7 @@ class Redis:
         self.redis = redis.Redis(host='localhost', port=6379, decode_responses=True)
         self.timeseries = self.redis.ts()
 
-    def add_data(self, action: str, class_: str, time: datetime, count: int) -> bool:
+    def add_data(self, action: str, class_: str, time: datetime, count: int):
         time = datetime_to_unix(time)
         self.timeseries.add(f"{self.people_key}:{action}:{class_}", time, count,
                             labels={"action": action, "class_": class_})

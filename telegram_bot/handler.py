@@ -1,10 +1,10 @@
 import os
 import sys
 from datetime import datetime, timedelta
-from telebot import types
+from Statistics import hist_pool_load
+
 sys.path.append(".")
 
-from Statistics import hist_pool_load
 
 def handle_pool_hist(message, bot, gender, date):
     delta = timedelta(days=1)
