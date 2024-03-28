@@ -1,9 +1,9 @@
 import os
 import sys
 from datetime import datetime, timedelta
+sys.path.append(".") # ЭТА ДИЧЬ СТОЯТЬ ДОЛЖНА ДО ИМПОРТА ЛОКАЛЬНЫХ МОДУЛЕЙ
 from Statistics import hist_pool_load
 
-sys.path.append(".")
 
 
 def handle_pool_hist(message, bot, gender, date):
