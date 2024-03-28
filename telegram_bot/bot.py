@@ -1,3 +1,6 @@
+# Код немного кривенький, так что запуск из каталога traffic-vision-, 
+# т.е. python telegram_bot/python, находясь в traffic-vision-, хз что с этим делать, помогите
+
 import telebot
 from telebot import types
 import config
@@ -27,6 +30,11 @@ def handle_message(message):
         everyone = types.InlineKeyboardButton('Все', callback_data='all')
         markup.add(man, woman, kid, everyone)
         bot.send_message(message.from_user.id, "Выберите по кому составить статистику", reply_markup=markup)
+    else:
+        markup = types.ReplyKeyboardMarkup(row_width=1)
+        markup.add(types.KeyboardButton("Посмотреть статистику"))
+
+        bot.send_message(message.chat.id, "Выберите один из вариантов:", reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: True)

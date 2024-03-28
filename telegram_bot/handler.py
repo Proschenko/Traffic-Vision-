@@ -16,19 +16,26 @@ def handle_pool_hist(message, bot, gender, date):
     except Exception:
         bot.send_message(message.chat.id, "Неверный формат даты")
         return
-
-    if gender == "all":
-        plt = hist_pool_load(start_day, end_day)
-    else:
-        plt = hist_pool_load(start_day, end_day, gender)
-
+    
+    try:
+        if gender == "all":
+            plt = hist_pool_load(start_day, end_day)
+        else:
+            plt = hist_pool_load(start_day, end_day, gender)
+    except Exception:
+        bot.send_message(message.chat.id, "Технические шоколадки, попробуйте позже")
+        return
     if not plt:
         bot.send_message(message.chat.id, "Нет данных за указанный период")
         return
 
+    
     folder = 'telegram_bot/temp/'
     path = f'{folder}pool_load_id{message.chat.id}.png'
+    if not os.path.exists(folder):
+        os.makedirs(folder)
 
+    
     plt.savefig(path)
     bot.send_photo(message.chat.id, open(path, 'rb'))
     if os.path.exists(path):
