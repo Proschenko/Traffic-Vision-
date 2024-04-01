@@ -2,7 +2,7 @@ import os
 import sys
 from datetime import datetime, timedelta
 
-sys.path.append(".")  # ЭТА ДИЧЬ СТОЯТЬ ДОЛЖНА ДО ИМПОРТА ЛОКАЛЬНЫХ МОДУЛЕЙ
+sys.path.append(".")  # СТОЯТЬ ДОЛЖНО ДО ИМПОРТА ЛОКАЛЬНЫХ МОДУЛЕЙ
 from Statistics import hist_pool_load, water_spilled, amount_in_out
 
 def in_out_handler(bot,users):
@@ -16,7 +16,7 @@ def in_out_handler(bot,users):
         for user in users:
                     bot.send_message(user, f"Вошло:{data[0]}, вышло:{data[1]}")
     except Exception:
-        print("Редис мертв, воскресите")
+        print("Пожалуйста, сообщите администратору, что редис не работает.")
         
         
 def datetime_one_day_from_str(date):
@@ -42,7 +42,7 @@ def handle_pool_hist(message, bot, gender, date):
         else:
             plt = hist_pool_load(start_day, end_day, gender)
     except Exception:
-        bot.send_message(message.chat.id, "Редис мертв, воскресите")
+        bot.send_message(message.chat.id, "Пожалуйста, сообщите администратору, что редис не работает.")
         return
     if not plt:
         bot.send_message(message.chat.id, "Нет данных за указанный период")
@@ -70,5 +70,5 @@ def handle_water(message, bot, date):
         water = water_spilled(start_day, end_day)
         bot.send_message(message.chat.id, f"{water} л")
     except Exception:
-        bot.send_message(message.chat.id, "Редис мертв, воскресите")
+        bot.send_message(message.chat.id, "Пожалуйста, сообщите администратору, что редис не работает.")
         return

@@ -1,5 +1,5 @@
-# Код немного кривенький, так что запуск из каталога traffic-vision-, 
-# т.е. python telegram_bot/python, находясь в traffic-vision-, хз что с этим делать, помогите
+# Запуск из каталога traffic-vision-, 
+# т.е. python telegram_bot/python, находясь в traffic-vision-
 
 import telebot
 from telebot import types
@@ -12,12 +12,14 @@ from threading import Thread
 
 bot = telebot.TeleBot(config.TOKEN)
 
-chat = [-1002019934484] #куда идёт рассылка
+chat = [-1002019934484] #айди чатов, куда идёт рассылка
 
 def start_schedule():
     global users
-    schedule.every().hour.do(lambda: in_out_handler(bot, chat))
-    
+    for i in range(24):
+        tmp_time = f"{str(i).zfill(2)}:00"
+        schedule.every().day.at(tmp_time).do(lambda: in_out_handler(bot, chat))
+
     while True:
         schedule.run_pending()
         time.sleep(1)
