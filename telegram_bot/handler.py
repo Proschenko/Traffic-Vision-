@@ -1,8 +1,10 @@
 import os
 import sys
 from datetime import datetime, timedelta
-sys.path.append(".") # ЭТА ДИЧЬ СТОЯТЬ ДОЛЖНА ДО ИМПОРТА ЛОКАЛЬНЫХ МОДУЛЕЙ
+
+sys.path.append(".")  # ЭТА ДИЧЬ СТОЯТЬ ДОЛЖНА ДО ИМПОРТА ЛОКАЛЬНЫХ МОДУЛЕЙ
 from Statistics import hist_pool_load, water_spilled
+
 
 def datetime_one_day_from_str(date):
     delta = timedelta(days=1)
@@ -33,13 +35,11 @@ def handle_pool_hist(message, bot, gender, date):
         bot.send_message(message.chat.id, "Нет данных за указанный период")
         return
 
-    
     folder = 'telegram_bot/temp/'
     path = f'{folder}pool_load_id{message.chat.id}.png'
     if not os.path.exists(folder):
         os.makedirs(folder)
 
-    
     plt.savefig(path)
     bot.send_photo(message.chat.id, open(path, 'rb'))
     if os.path.exists(path):

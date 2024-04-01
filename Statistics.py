@@ -7,18 +7,16 @@ def water_spilled(start_date: datetime, end_date: datetime) -> int:
     """
     Возвращает количество воды, что вытеснило N человек
     пока 50 литров на человека
-    :param people: Список людей или количество людей
-    :type people: list
+    :param start_date:
+    :param end_date:
     :return: Количество воды в литрах на N людей
-    :rtype: int
     """
     db = Redis()
-    everyone = db.get_count(start_date, end_date, "enter", 1) 
+    everyone = db.get_count(start_date, end_date, "enter", 1)
     man = everyone.get("man", [])
     woman = everyone.get("woman", [])
     kid = everyone.get("kid", [])
-    return sum(map(len, (man,woman,kid)))*50
-
+    return sum(map(len, (man, woman, kid))) * 50
 
 
 def hist_pool_load(start_date: datetime, end_date: datetime, gender: Class_ = None):
@@ -61,9 +59,9 @@ def hist_pool_load(start_date: datetime, end_date: datetime, gender: Class_ = No
     # plt.show()
     return plt
 
+
 def chemistry(smth=True):
     return True
-
 
 
 if __name__ == "__main__":

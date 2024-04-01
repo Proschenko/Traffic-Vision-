@@ -1,5 +1,6 @@
 import cv2
 import os
+from tqdm import tqdm
 from ultralytics import YOLO
 
 
@@ -9,6 +10,11 @@ def delete_files_in_folder(folder_path):
     :param folder_path:
     :return:
     """
+
+    # Создание папки для сохранения кадров, если она не существуе   т
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
     for root, dirs, files in os.walk(folder_path):
         for file_name in files:
             file_path = os.path.join(root, file_name)
@@ -30,9 +36,9 @@ print(f"В папке имеется {len(img_list)} изображений")
 delete_files_in_folder('self development dataset/train/images')
 delete_files_in_folder('self development dataset/train/labels')
 
-for img_name in img_list:
+for img_name in tqdm(img_list, desc="Detected frame", unit="frame"):
     img_filepath = directory + "\\" + img_name
-    print(img_filepath)
+    # print(img_filepath)
     img = cv2.imread(img_filepath)
     img_copy = img
 
@@ -40,7 +46,7 @@ for img_name in img_list:
     h, w, _ = img.shape
 
     # получаем предсказания по картинке
-    results = model.predict(source=img, conf=0.50)
+    results = model.predict(source=img, conf=0.50, verbose=False)
 
     # расшифровываем объект results
     bboxes_ = results[0].boxes.xyxy.tolist()
