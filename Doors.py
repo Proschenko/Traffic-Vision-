@@ -1,7 +1,9 @@
 from dataclasses import dataclass, field
-from typing import Generator
+from typing import Generator, Any
 
 import numpy as np
+from numpy import ndarray, dtype
+
 from misc import boxes_center
 
 corners_path = "doors_corners.txt"
@@ -33,49 +35,49 @@ class DoorList:
         doors = list()
         with open(path) as file:
             for row in file.readlines():
-                name, *corners = row.split()
-                corners = np.fromiter(map(int, corners), int)
-                doors.append(Door(name, corners))
+                name, *corners_inner = row.split()
+                corners_inner = np.fromiter(map(int, corners_inner), int)
+                doors.append(Door(name, corners_inner))
         return cls(doors)
 
     def __iter__(self) -> Generator[Door, None, None]:
         yield from self.doors
 
     @property
-    def centers(self) -> tuple[tuple[int, int]]:
+    def centers(self) -> tuple[tuple[int, int], ...]:
         """
         TODO: документация
         :return:
         """
-        return tuple(d.center for d in self.doors)
+        return tuple(door.center for door in self.doors)
 
 
-def update_corners(corners: list[list[float]]):
+def update_corners(corners_inner: ndarray[Any, dtype[Any]]):
     """
     TODO: документация
-    :param corners:
+    :param corners_inner:
     :return:
     """
     with open(corners_path, 'w') as file:
-        for name, row in zip(door_names, corners):
+        for name, row in zip(door_names, corners_inner):
             print(name, " ".join(map(str, row)), file=file)
 
 
-def corners_from_norm(corners: list[list[float]],
-                      image_shape: tuple[int, int]) -> np.ndarray[int, int]:
+def corners_from_norm(corners_inner: list[list[float]],
+                      image_shape: tuple[int, int]) -> ndarray[Any, dtype[Any]]:
     """
     TODO: документация
-    :param corners:
+    :param corners_inner:
     :param image_shape:
     :return:
     """
-    corners = np.array(corners)
-    corners[..., (0, 2)] *= image_shape[0]
-    corners[..., (1, 3)] *= image_shape[1]
-    return corners.astype(int)
+    corners_inner = np.array(corners_inner)
+    corners_inner[..., (0, 2)] *= image_shape[0]
+    corners_inner[..., (1, 3)] *= image_shape[1]
+    return corners_inner.astype(int)
 
 
-def corners_from_width_height(data: list[list[int]]) -> np.ndarray[int, int]:
+def corners_from_width_height(data: list[list[int]]) -> ndarray[Any, dtype[Any]]:
     """
     TODO: документация
     :param data:

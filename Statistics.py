@@ -3,40 +3,41 @@ from datetime import datetime
 from DataBase import Redis, Class_, unix_to_datetime
 
 
-def water_spilled(people: list | int) -> int:
+def water_spilled(start_date: datetime, end_date: datetime) -> int:
     """
     Возвращает количество воды, что вытеснило N человек
     пока 50 литров на человека
-    :param people: Список людей или количество людей
-    :type people: list
+    :param start_date:
+    :param end_date:
     :return: Количество воды в литрах на N людей
-    :rtype: int
     """
-    if type(people) == int:
-        return people * 50
-    if type(people) == list:
-        return len(people) * 50
+    db = Redis()
+    everyone = db.get_count(start_date, end_date, "enter", 1)
+    man = everyone.get("man", [])
+    woman = everyone.get("woman", [])
+    kid = everyone.get("kid", [])
+    return sum(map(len, (man, woman, kid))) * 50
 
 
-def hist_pool_load(start_date: datetime, end_date: datetime, gender: Class_ = None) -> None:
+def hist_pool_load(start_date: datetime, end_date: datetime, gender: Class_ = None):
     db = Redis()
     entered = db.get_count(start_date, end_date, "enter", 1)
-    exitted = db.get_count(start_date, end_date, "exit", 1)
+    exited = db.get_count(start_date, end_date, "exit", 1)
 
     if gender:
         entered = entered.get(gender, [])
-        exitted = exitted.get(gender, [])
+        exited = exited.get(gender, [])
     else:
         entered = entered.get("man", []) + entered.get("woman", []) + entered.get("kid", [])
-        exitted = exitted.get("man", []) + exitted.get("woman", []) + exitted.get("kid", [])
-    if not (entered and exitted):
+        exited = exited.get("man", []) + exited.get("woman", []) + exited.get("kid", [])
+    if not (entered and exited):
         print("Нет данных за указанный период")
         return
 
     combined = [(unix_to_datetime(time), enter_people, exit_people) for (time, enter_people), (_, exit_people) in
-                zip(entered, exitted)]
+                zip(entered, exited)]
 
-    print(len(entered), len(exitted))
+    print(len(entered), len(exited))
     hourly_in = {}
     hourly_out = {}
     for time, in_val, out_val in combined:
@@ -55,7 +56,12 @@ def hist_pool_load(start_date: datetime, end_date: datetime, gender: Class_ = No
     plt.xlabel('Часы')
     plt.ylabel('Количество людей')
     plt.title('Гистограмма загруженности бассейна по часам')
-    plt.show()
+    # plt.show()
+    return plt
+
+
+def chemistry(smth=True):
+    return True
 
 
 if __name__ == "__main__":

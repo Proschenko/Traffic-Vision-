@@ -43,7 +43,6 @@ class Tracking:
     def process_video_with_tracking(self, rtsp_url: str, show_video=True, save_path=None):
         """
         TODO: документация
-        :param model:
         :param rtsp_url:
         :param show_video:
         :param save_path:
@@ -131,15 +130,12 @@ class Tracking:
             action = self.check_action(close, history)
             match action:
                 case Action.Entered:
-                    # print("Я родилсо")
                     self.in_out[0] += 1
                     self.redis.increment("enter", person.model_class, time)
                 case Action.Exited:
-                    # print("Я ухожук")
                     self.in_out[1] += 1
                     self.redis.increment("exit", person.model_class, time)
                 case Action.Passed:
-                    # print("Я передумал")
                     self.in_out[1] -= 1
                     self.redis.decrement("exit", person.model_class, time)
             if action is not None:
