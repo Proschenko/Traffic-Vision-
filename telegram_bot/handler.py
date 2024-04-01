@@ -3,9 +3,22 @@ import sys
 from datetime import datetime, timedelta
 
 sys.path.append(".")  # ЭТА ДИЧЬ СТОЯТЬ ДОЛЖНА ДО ИМПОРТА ЛОКАЛЬНЫХ МОДУЛЕЙ
-from Statistics import hist_pool_load, water_spilled
+from Statistics import hist_pool_load, water_spilled, amount_in_out
 
-
+def in_out_handler(bot,users):
+    delta = timedelta(hours=1)
+    end_time = datetime.now()
+    end_time = end_time - timedelta(minutes=end_time.minute, seconds=end_time.second, microseconds=end_time.microsecond)
+    start_time = end_time - delta
+    print(start_time, end_time)
+    try:
+        data = amount_in_out(start_time, end_time)
+        for user in users:
+                    bot.send_message(user, f"Вошло:{data[0]}, вышло:{data[1]}")
+    except Exception:
+        print("Редис мертв, воскресите")
+        
+        
 def datetime_one_day_from_str(date):
     delta = timedelta(days=1)
     date = date.text
