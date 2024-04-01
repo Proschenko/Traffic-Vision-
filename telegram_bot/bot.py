@@ -16,7 +16,7 @@ chat = [-1002019934484] #куда идёт рассылка
 
 def start_schedule():
     global users
-    schedule.every().second.do(lambda: in_out_handler(bot, chat))
+    schedule.every().hour.do(lambda: in_out_handler(bot, chat))
     
     while True:
         schedule.run_pending()
