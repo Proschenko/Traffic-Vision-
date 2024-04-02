@@ -1,6 +1,12 @@
+from cv2.typing import MatLike
 from enum import Enum, IntEnum
 
 import numpy as np
+
+frame_crop = {
+    "width": 950,
+    "height": 300
+}
 
 
 class Location(Enum):
@@ -28,6 +34,11 @@ class Distances(IntEnum):
     Close = 54
     Around = 100
 
+def crop_image(image: MatLike,
+               left=None, width=None, 
+               top=None, height=None) -> MatLike:
+    return image[top or 0: height or -1,
+                 left or 0: width or -1]
 
 def dist(x1: float, y1: float, x2: float, y2: float) -> float:
     """
