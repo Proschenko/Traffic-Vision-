@@ -10,7 +10,7 @@ from ultralytics.engine.results import Results
 
 from DataBase import Redis
 from Debug_drawer import draw_debug
-from misc import Location, boxes_center
+from misc import Location, boxes_center, crop_image, frame_crop
 from People import People
 
 
@@ -73,7 +73,7 @@ class Tracking:
             
             if frame_number % frame_step != 0:
                 continue
-            frame = frame[:300, :950]
+            frame = crop_image(frame, **frame_crop)
 
             # Process the frame with your YOLO model
             results = self.model.track(frame, **model_args)[0]

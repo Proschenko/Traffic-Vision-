@@ -1,7 +1,10 @@
-import cv2
 import os
+
+import cv2
 from tqdm import tqdm
 from ultralytics import YOLO
+
+from misc import crop_image, frame_crop
 
 
 def delete_files_in_folder(folder_path):
@@ -40,6 +43,7 @@ for img_name in tqdm(img_list, desc="Detected frame", unit="frame"):
     img_filepath = directory + "\\" + img_name
     # print(img_filepath)
     img = cv2.imread(img_filepath)
+    img = crop_image(img, **frame_crop)
     img_copy = img
 
     # получаем ширину и высоту картинки
