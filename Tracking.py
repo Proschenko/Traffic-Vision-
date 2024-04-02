@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum, auto
-from itertools import count, takewhile
 
 import cv2
 import numpy as np
@@ -10,9 +9,9 @@ from ultralytics.engine.results import Results
 
 from DataBase import Redis
 from Debug_drawer import draw_debug
-from StreamCatcher import Stream
 from misc import Location, boxes_center, crop_image, frame_crop
 from People import People
+from StreamCatcher import Stream
 
 
 class Action(Enum):
@@ -85,7 +84,7 @@ class Tracking:
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
 
-        cap.release()
+        stream.release()
         if save_video:
             out.release()
         cv2.destroyAllWindows()

@@ -38,3 +38,6 @@ class Stream:
 
             if frame_number % step == 0:
                 yield frame
+    
+    def release(self):
+        self.cap.release()
