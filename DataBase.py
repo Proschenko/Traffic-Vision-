@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from pprint import pprint
 from random import random
 from time import mktime
 from typing import Literal
@@ -60,7 +59,7 @@ class Redis:
     def reset_counter(self, action: Action, class_: Class_, time: datetime):
         if self.last_update(action, class_).day == time.day:
             return
-        print(time)
+        print("I am gona reset counter!")
         time = datetime_to_unix(time)
         self.timeseries.add(f"{self.people_key}:{action}:{class_}", time, 1)
 

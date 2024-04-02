@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum, auto
-from itertools import count, takewhile
 
 import cv2
 import numpy as np
@@ -12,6 +11,7 @@ from DataBase import Redis
 from Debug_drawer import draw_debug
 from misc import Location, boxes_center, crop_image, frame_crop
 from People import People
+from StreamCatcher import Stream
 
 
 class Action(Enum):
@@ -54,33 +54,18 @@ class Tracking:
         model_args = {"iou": 0.4, "conf": 0.5, "persist": True,
                       "imgsz": 640, "verbose": False,
                       "tracker": "botsort.yaml"}
+        
         frame_step = 4
+        stream = Stream(rtsp_url)
 
-        cap = cv2.VideoCapture(rtsp_url)
-        cap.set(cv2.CAP_PROP_BUFFERSIZE, 25*8)
-        position_ms = cap.get(cv2.CAP_PROP_POS_MSEC)
-        start_time = datetime.now() - timedelta(milliseconds=position_ms)
-
-        if not cap.isOpened():
-            raise Exception("Error: Could not open video file.")
-
-        fps = int(cap.get(cv2.CAP_PROP_FPS))
-
-        for frame_number in takewhile(lambda _: cap.isOpened(), count()):
-            ret, frame = cap.read()
-            if not ret:
-                break
-            
-            if frame_number % frame_step != 0:
-                continue
+        for frame in stream.iter_frames(frame_step):
             frame = crop_image(frame, **frame_crop)
 
             # Process the frame with your YOLO model
             results = self.model.track(frame, **model_args)[0]
             
             persons = self.parse_results(results)
-            position_ms = cap.get(cv2.CAP_PROP_POS_MSEC)
-            frame_time = start_time + timedelta(milliseconds=position_ms)
+            frame_time = stream.start_time + timedelta(milliseconds=stream.position)
             self.tracking(persons, frame_time)
 
             if save_video or show_video:
@@ -88,9 +73,10 @@ class Tracking:
 
             if save_video:
                 if out is None:
-                    height, width, _ = debug_frame.shape
                     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                    out = cv2.VideoWriter(save_path, fourcc, fps//frame_step, (width, height))
+                    fps = stream.fps // frame_step
+                    frameSize = debug_frame.shape[-2::-1]
+                    out = cv2.VideoWriter(save_path, fourcc, fps, frameSize)
                 out.write(debug_frame)
 
             if show_video:
@@ -98,7 +84,7 @@ class Tracking:
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
 
-        cap.release()
+        stream.release()
         if save_video:
             out.release()
         cv2.destroyAllWindows()
@@ -154,13 +140,12 @@ class Tracking:
         :return: Список объектов People
         :rtype: list[People]
         """
-        if results.boxes.id is None:
-            return list()
-        boxes = results.boxes.numpy()
+        boxes = results.boxes.cpu().numpy()
         centers = boxes_center(boxes.xyxy)
         people = list()
         for box, center in zip(boxes, centers.astype(int)):
-            people.append(People(int(*box.id), self.model.names[int(*box.cls)], *box.conf, center))
+            id = int(box.id) if box.id is not None else None
+            people.append(People(id, results.names[int(*box.cls)], *box.conf, center))
         return people
 
     # region Пусть пока подумает над своим поведением

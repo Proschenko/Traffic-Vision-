@@ -7,7 +7,8 @@ from misc import Distances
 from People import People
 
 
-def draw_debug(results: Results, people: list[People],
+def draw_debug(results: Results, people: list[People], 
+               resize: tuple[float, float] = (0.75, 0.75),
                draw_boxes=True, draw_doors=True, draw_lines=True) -> MatLike:
     """
     Рисует дебаг информицию
@@ -33,7 +34,7 @@ def draw_debug(results: Results, people: list[People],
     if draw_doors:
         for door in Doors:
             draw_door(frame, door)
-    return cv2.resize(frame, (0, 0), fx=0.75, fy=0.75)
+    return cv2.resize(frame, (0, 0), None, *resize)
 
 
 def draw_door(frame: MatLike, door: Door):
