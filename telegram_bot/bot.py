@@ -12,7 +12,8 @@ from threading import Thread
 
 bot = telebot.TeleBot(config.TOKEN)
 
-chat = [-1002019934484] #айди чатов, куда идёт рассылка
+chat = [-1002019934484]  # айди чатов, куда идёт рассылка
+
 
 def start_schedule():
     global users
@@ -70,13 +71,15 @@ def callback_query(call):
         bot.register_next_step_handler(call.message,
                                        lambda message: handle_pool_hist(call.message, bot, call.data, message))
 
+
 def polling():
     bot.polling(none_stop=True)
+
 
 # RUN
 if __name__ == "__main__":
     updates_thread = Thread(target=start_schedule)
     polling_thread = Thread(target=polling)
-   
+
     updates_thread.start()
     polling_thread.start()
