@@ -15,7 +15,7 @@ np.random.seed(42)
 
 class CustomYOLOv8Model:
     def __init__(self):
-        self.dataset_version = 3
+        self.dataset_version = 4
         self.rf = Roboflow(api_key="rBzIu5I6ccC0pMQqHBlF")
         self.dataset_name = "traffic-control-project"
 

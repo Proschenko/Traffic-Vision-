@@ -1,0 +1,15 @@
+names:
+- coach
+- kid
+- man
+- woman
+nc: 4
+roboflow:
+  license: CC BY 4.0
+  project: traffic-control-project
+  url: https://universe.roboflow.com/traffic-vision-workspace-kb8fc/traffic-control-project/dataset/4
+  version: 4
+  workspace: traffic-vision-workspace-kb8fc
+test: ../test/images
+train: ../train/images
+val: ../valid/images
