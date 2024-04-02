@@ -20,12 +20,24 @@ class Stream:
         self.start_time = datetime.now() - timedelta(milliseconds=self.position)
 
     @property
-    def position(self) -> float:
-        return self.cap.get(cv2.CAP_PROP_POS_MSEC)
+    def position(self) -> int:
+        return int(self.cap.get(cv2.CAP_PROP_POS_MSEC))
+    
+    @property
+    def frame_number(self) -> int:
+        return int(self.cap.get(cv2.CAP_PROP_POS_FRAMES))
     
     @cached_property
     def fps(self) -> int:
         return int(self.cap.get(cv2.CAP_PROP_FPS))
+    
+    @cached_property
+    def n_frames(self) -> int:
+        return int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    
+    def jump_to(self, second: int):
+        frame = self.fps * second
+        self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame)
     
     def iter_frames(self, step: int) -> Generator[MatLike, None, None]:
         for frame_number in count():

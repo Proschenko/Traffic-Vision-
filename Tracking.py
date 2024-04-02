@@ -140,13 +140,12 @@ class Tracking:
         :return: Список объектов People
         :rtype: list[People]
         """
-        if results.boxes.id is None:
-            return list()
-        boxes = results.boxes.numpy()
+        boxes = results.boxes.cpu().numpy()
         centers = boxes_center(boxes.xyxy)
         people = list()
         for box, center in zip(boxes, centers.astype(int)):
-            people.append(People(int(*box.id), self.model.names[int(*box.cls)], *box.conf, center))
+            id = int(box.id) if box.id is not None else None
+            people.append(People(id, results.names[int(*box.cls)], *box.conf, center))
         return people
 
     # region Пусть пока подумает над своим поведением
