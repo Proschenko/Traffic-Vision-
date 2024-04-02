@@ -50,13 +50,28 @@ class Redis:
             _, _, class_ = name.rpartition(":")
             res[class_] = value[1]
         return res
+    
+    def last_update(self, action: Action, class_: Class_) -> datetime:
+        if not self.redis.exists(f"{self.people_key}:{action}:{class_}"):
+            return datetime.now()
+        time, _ = self.timeseries.get(f"{self.people_key}:{action}:{class_}")
+        return unix_to_datetime(time)
+    
+    def reset_counter(self, action: Action, class_: Class_, time: datetime):
+        if self.last_update(action, class_).day == time.day:
+            return
+        print(time)
+        time = datetime_to_unix(time)
+        self.timeseries.add(f"{self.people_key}:{action}:{class_}", time, 1)
 
     def increment(self, action: Action, class_: Class_, time: datetime):
+        self.reset_counter(action, class_, time)
         time = datetime_to_unix(time)
         self.timeseries.incrby(f"{self.people_key}:{action}:{class_}", 1, time,
                                labels={"action": action, "class_": class_})
 
     def decrement(self, action: Action, class_: Class_, time: datetime):
+        self.reset_counter(action, class_, time)
         time = datetime_to_unix(time)
         self.timeseries.decrby(f"{self.people_key}:{action}:{class_}", 1, time,
                                labels={"action": action, "class_": class_})
@@ -98,4 +113,5 @@ if __name__ == "__main__":
     db.remove_all_data()
     db.create_test_data()
 
-    pprint(db.get_count(datetime.fromtimestamp(0), datetime.now(), "exit", 1))
+    # pprint(db.get_count(datetime.fromtimestamp(0), datetime.now(), "enter", 1*3600*24))
+    print(db.last_update("enter", "man"))
