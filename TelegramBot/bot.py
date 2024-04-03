@@ -6,11 +6,11 @@ if __name__ == "__main__":
 import time
 from threading import Thread
 
-import config
 import schedule
 import telebot
 from telebot import types
 
+from TelegramBot import config
 from TelegramBot.handler import handle_pool_hist, handle_water, in_out_handler
 
 bot = telebot.TeleBot(config.TOKEN)
@@ -78,11 +78,13 @@ def callback_query(call):
 def polling():
     bot.polling(none_stop=True)
 
-
-# RUN
-if __name__ == "__main__":
+def main():
     updates_thread = Thread(target=start_schedule)
     polling_thread = Thread(target=polling)
 
     updates_thread.start()
     polling_thread.start()
+    
+# RUN
+if __name__ == "__main__":
+    main()

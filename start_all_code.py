@@ -1,6 +1,9 @@
+from os.path import dirname
+from pathlib import Path
 import subprocess
 
 if __name__ == "__main__":
-    subprocess.Popen(["python", r"D:\PyCharm Com\Project\Traffic-Vision-/telegram_bot/bot.py"], shell=True)
-    subprocess.Popen(["python", r"D:\PyCharm Com\Project\Traffic-Vision-/main.py"], shell=True)
-
+    folder = Path(dirname(__file__))
+    for file in ("run_bot.py", "run_tracker.py"):
+        path = str(folder / file)
+        subprocess.Popen(["python", path], shell=True)
