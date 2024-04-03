@@ -1,6 +1,13 @@
-import matplotlib.pyplot as plt
+if __name__ == "__main__":
+    import sys
+    from os.path import dirname
+    sys.path.append(dirname(__file__).rpartition('\\')[0])
+	
 from datetime import datetime
-from DataBase import Redis, Class_, unix_to_datetime
+
+import matplotlib.pyplot as plt
+
+from DataBase.Redis import Class_, Redis, unix_to_datetime
 
 
 def get_data(start_date: datetime, end_date: datetime, gender: Class_ = None, column="enter") -> list:

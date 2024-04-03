@@ -2,9 +2,9 @@ import cv2
 from cv2.typing import MatLike
 from ultralytics.engine.results import Results
 
-from Doors import Door, Doors
-from misc import Distances
-from People import People
+from Tracker.Doors import Door, Doors
+from Tracker.misc import Distances
+from Tracker.People import People
 
 
 def draw_debug(results: Results, people: list[People], 

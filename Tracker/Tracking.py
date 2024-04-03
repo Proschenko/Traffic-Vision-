@@ -7,11 +7,11 @@ import numpy as np
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 
-from DataBase import Redis
-from Debug_drawer import draw_debug
-from misc import Location, boxes_center, crop_image, frame_crop
-from People import People
-from StreamCatcher import Stream
+from DataBase.Redis import Redis
+from Tracker.Debug_drawer import draw_debug
+from Tracker.misc import Location, boxes_center, crop_image, frame_crop
+from Tracker.People import People
+from Tracker.StreamCatcher import Stream
 
 
 class Action(Enum):

@@ -1,7 +1,13 @@
+if __name__ == "__main__":
+    import sys
+    from os.path import dirname
+    sys.path.append(dirname(__file__).rpartition('\\')[0])
+
 import unittest
 
 import numpy as np
-from misc import boxes_center
+
+from Tracker.misc import boxes_center
 
 
 class TestBoxesCenter(unittest.TestCase):
