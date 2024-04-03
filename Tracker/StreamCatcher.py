@@ -1,6 +1,9 @@
+import multiprocessing as mp
 from datetime import datetime, timedelta
 from functools import cached_property
 from itertools import count
+from multiprocessing import Queue
+from queue import Empty
 from typing import Generator
 
 import cv2
@@ -54,3 +57,47 @@ class Stream:
 
     def release(self):
         self.cap.release()
+
+class ParallelStream:
+    def __init__(self, rtsp_url: str) -> None:
+        self.data = Queue(maxsize=1)
+
+        self.process = mp.Process(target=self.catch_frames, 
+                                  args=[rtsp_url, self.data])
+        self.process.start()
+        self.start_time = datetime.now()
+        self.position = 0
+    
+    def iter_actual(self) -> Generator[tuple[MatLike, int], None, None]:
+        try: 
+            while True:
+                pos, frame = self.data.get(timeout=10)
+                self.position = pos
+                yield frame
+        except Empty:
+            raise StreamException("Connection time out")
+
+    @staticmethod
+    def catch_frames(rtsp_url: str, output: Queue):
+        cap = cv2.VideoCapture(rtsp_url)
+        if not cap.isOpened():
+            StreamException(f"Cant open file {rtsp_url = }")
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+            position = int(cap.get(cv2.CAP_PROP_POS_MSEC))
+            try:
+                output.get_nowait()
+            except Empty:
+                pass
+            output.put((position, frame), timeout=1)
+        cap.release()
+
+    def release(self):
+        self.__del__()
+    
+    def __del__(self):
+        self.process.terminate()

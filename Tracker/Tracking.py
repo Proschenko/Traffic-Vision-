@@ -11,7 +11,7 @@ from DataBase.Redis import Redis
 from Tracker.Debug_drawer import draw_debug
 from Tracker.misc import Location, boxes_center, crop_image, frame_crop
 from Tracker.People import People
-from Tracker.StreamCatcher import Stream
+from Tracker.StreamCatcher import ParallelStream
 
 
 class Action(Enum):
@@ -56,9 +56,8 @@ class Tracking:
                       "tracker": "botsort.yaml"}
         
         frame_step = 4
-        stream = Stream(rtsp_url)
-
-        for frame in stream.iter_frames(frame_step):
+        stream = ParallelStream(rtsp_url)
+        for frame in stream.iter_actual():
             frame = crop_image(frame, **frame_crop)
 
             # Process the frame with your YOLO model
