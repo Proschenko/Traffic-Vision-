@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from Doors import Door, Doors
-from misc import Distances, Location, dist
+from Tracker.Doors import Door, Doors
+from Tracker.misc import Distances, Location, dist
 
 
 @dataclass(frozen=True, slots=True)

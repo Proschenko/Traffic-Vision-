@@ -1,10 +1,15 @@
+if __name__ == "__main__":
+    import sys
+    from os.path import dirname
+    sys.path.append(dirname(__file__).rpartition('\\')[0])
+	
 import os
 
 import cv2
 from tqdm import tqdm
 from ultralytics import YOLO
 
-from misc import crop_image, frame_crop
+from Tracker.misc import crop_image, frame_crop
 
 
 def delete_files_in_folder(folder_path):

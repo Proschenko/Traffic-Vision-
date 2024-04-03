@@ -1,14 +1,17 @@
-# Запуск из каталога traffic-vision-, 
-# т.е. python telegram_bot/python, находясь в traffic-vision-
-
-import telebot
-from telebot import types
-import config
-from handler import handle_pool_hist, handle_water, in_out_handler
+if __name__ == "__main__":
+    import sys
+    from os.path import dirname
+    sys.path.append(dirname(__file__).rpartition('\\')[0])
 
 import time
-import schedule
 from threading import Thread
+
+import config
+import schedule
+import telebot
+from telebot import types
+
+from TelegramBot.handler import handle_pool_hist, handle_water, in_out_handler
 
 bot = telebot.TeleBot(config.TOKEN)
 

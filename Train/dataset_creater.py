@@ -1,11 +1,16 @@
+if __name__ == "__main__":
+    import sys
+    from os.path import dirname
+    sys.path.append(dirname(__file__).rpartition('\\')[0])
+
 import cv2
 from tqdm import tqdm
 from ultralytics import YOLO
 
-from Debug_drawer import draw_debug
-from misc import crop_image, dist, frame_crop
-from StreamCatcher import Stream
-from Tracking import Tracking
+from Tracker.Debug_drawer import draw_debug
+from Tracker.misc import crop_image, frame_crop
+from Tracker.StreamCatcher import Stream
+from Tracker.Tracking import Tracking
 
 model_args = {"iou": 0, "conf": 0.2,
               "imgsz": 640, "verbose": False}

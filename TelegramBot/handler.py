@@ -1,9 +1,14 @@
+if __name__ == "__main__":
+    import sys
+    from os.path import dirname
+    sys.path.append(dirname(__file__).rpartition('\\')[0])
+	
 import os
 import sys
 from datetime import datetime, timedelta
 
-sys.path.append(".")  # СТОЯТЬ ДОЛЖНО ДО ИМПОРТА ЛОКАЛЬНЫХ МОДУЛЕЙ
-from Statistics import hist_pool_load, water_spilled, amount_in_out
+from DataBase.Statistics import amount_in_out, hist_pool_load, water_spilled
+
 
 def in_out_handler(bot,users):
     delta = timedelta(hours=1)

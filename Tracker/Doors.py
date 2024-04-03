@@ -4,7 +4,7 @@ from typing import Generator, Any
 import numpy as np
 from numpy import ndarray, dtype
 
-from misc import boxes_center
+from Tracker.misc import boxes_center
 
 corners_path = "doors_corners.txt"
 door_names = ("women", "men", "kid")
