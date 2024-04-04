@@ -1,9 +1,8 @@
-from collections import defaultdict
 from datetime import datetime, timedelta
 from enum import Enum
 from itertools import product
-from pprint import pprint
 from time import mktime
+from typing import Sequence
 
 import numpy as np
 import pandas as pd
@@ -18,6 +17,33 @@ class Gender(Enum):
     Man = "man"
     Woman = "woman"
     Kid = "kid"
+
+class Filter:
+    def __init__(self, action: Action|tuple[Action]=None, gender: Gender|tuple[Gender]=None) -> None:
+        self.actions = self.parse(action, Action)
+        self.genders = self.parse(gender, Gender)
+
+    def parse(self, something, anything: Enum) -> tuple[Enum]:
+        if something is None:
+            something = tuple(anything)
+        if not isinstance(something, Sequence):
+            something = (something, )
+        return something
+    
+    def tuple_to_str(self, s: tuple[Enum]) -> str:
+        if len(s) == 1:
+            return s[0].value
+        return f"({','.join(e.value for e in s)})"
+    
+    def filter(self) -> list[str]:
+        a = [f"action={self.tuple_to_str(self.actions)}", 
+             f"gender={self.tuple_to_str(self.genders)}"]
+        print(a)
+        return a
+    
+    def __str__(self) -> str:
+        return f"Filter {self.actions}, {self.genders}"
+
 
 unix_timestamp = int
 
@@ -43,14 +69,6 @@ class Redis:
     def labels(self, action: Action, gender: Gender) -> dict[str, str]:
         return {"action": action.value, "gender": gender.value, "oleg": "pepeg"}
 
-    def filter(self, action: Action=None, gender: Gender=None) -> list[str]:
-        f = ["oleg=pepeg"]
-        if action:
-            f.append(f"action={action.value}")
-        if gender:
-            f.append(f"gender={gender.value}")
-        return f
-
     def get_count(self, start: datetime, end: datetime,
                   action: Action, step: int) -> dict[str, list[tuple[unix_timestamp, int]]]:
         "deprecated, don't use it"
@@ -64,66 +82,32 @@ class Redis:
             _, _, gender = name.rpartition(":")
             res[gender] = value[1]
         return res
-    
-    def get_amount(self, date: datetime, action: Action=None, 
-                   gender: Gender=None) -> dict[Action, dict[Gender, int]]:
-        """
-        Возвращает количество человек совершивших action и принадлежащих gender.
-        Если action или gender не указаны, возвращает все доступные.
 
-        :param date: Дата
-        :type date: datetime
-        :param action: Действие, defaults to None
-        :type action: Action, optional
-        :param gender: Пол, defaults to None
-        :type gender: Gender, optional
-        :return: Словарь ключ - действие, значение - словарь, где ключ - пол, значение - кол-во
-        :rtype: dict[Action, dict[Gender, int]]
-        """
-        day_start = datetime_to_unix(date.date())
-        day_lenght = int(timedelta(days=1).total_seconds()*1000)
-        day_end = day_start + day_lenght -1
-
-        response = self.timeseries.mrange(day_start, day_end, self.filter(action, gender),
-                                          aggregation_type="range", bucket_size_msec=day_lenght,
-                                          align="-")
-        result = defaultdict(dict)
-        for part in response:
-            (full_name, raw_data), *_ = part.items()
-            count = int(raw_data[1][0][1])
-            _, act, gen = full_name.split(":")
-            act, gen = Action(act), Gender(gen)
-            result[act][gen] = count
-        return result
-    
-    def get_hist(self, date: datetime, n_buckets: int, action: Action=None, 
-                   gender: Gender=None) -> pd.DataFrame:
+    def get_hist(self, date: datetime, n_buckets: int, filter: Filter=None) -> pd.DataFrame:
         """
         Возвращает количество человек в день date с шагом 24/n_buckets часов.
-        Фильтрует по action и gender если указаны.
 
         :param date: Дата
         :type date: datetime
-        :param n_buckets: Число значений количества
+        :param n_buckets: Число строчек таблицы
         :type n_buckets: int
-        :param action: Действие, defaults to None
-        :type action: Action, optional
-        :param gender: Пол, defaults to None
-        :type gender: Gender, optional
+        :param filter: Фильтр действия и пола, defaults to None
+        :type filter: Filter, optional
         :return: Таблица где индекс - datetime время, колонки - action, gender
         :rtype: pd.DataFrame
         """
+        filter = filter or Filter()
         day_start = datetime_to_unix(date.date())
         day_lenght = int(timedelta(days=1).total_seconds()*1000)
         day_end = day_start + day_lenght
         bucket = day_lenght // n_buckets
         
-        response = self.timeseries.mrange(day_start, day_end-1, self.filter(action, gender),
+        response = self.timeseries.mrange(day_start, day_end-1, filter.filter(),
                                           aggregation_type="range", bucket_size_msec=bucket,
                                           align="-")
         index = pd.date_range(date.date(), unix_to_datetime(day_end), n_buckets+1, inclusive="left")
-        actions = (action, ) if action is not None else list(Action)
-        genders = (gender, ) if gender is not None else list(Gender)
+        actions = filter.actions
+        genders = filter.genders
 
         columns = pd.MultiIndex.from_product((actions, genders))
         result = pd.DataFrame(0, index=index, columns=columns)
@@ -189,11 +173,10 @@ class Redis:
 
 if __name__ == "__main__":
     from matplotlib import pyplot as plt
-    import matplotlib.dates as mdates
     db = Redis()
-    # db.create_test_data()
+    db.create_test_data()
 
-    res = db.get_hist(datetime(2024, 3, 15, 12), 12, action=Action.Enter)
+    res = db.get_hist(datetime(2024, 3, 15, 12), 12)
     print(res)
     print()
     res.plot(kind='bar')
