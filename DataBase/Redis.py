@@ -1,15 +1,22 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
+from enum import Enum
 from itertools import product
 from pprint import pprint
 from time import mktime
-from typing import Literal
 
 import numpy as np
 import redis
 
-Action = Literal["enter", "exit"]
-Gender = Literal["man", "woman", "kid"]
+
+class Action(Enum):
+    Enter = "enter"
+    Exit = "exit"
+
+class Gender(Enum):
+    Man = "man"
+    Woman = "woman"
+    Kid = "kid"
 
 unix_timestamp = int
 
@@ -30,17 +37,17 @@ class Redis:
         self.timeseries = self.redis.ts()
     
     def key(self, action: Action, gender: Gender) -> str:
-        return f"{self.people_key}:{action}:{gender}"
+        return f"{self.people_key}:{action.value}:{gender.value}"
     
     def labels(self, action: Action, gender: Gender) -> dict[str, str]:
-        return {"action": action, "gender": gender, "oleg": "pepeg"}
+        return {"action": action.value, "gender": gender.value, "oleg": "pepeg"}
 
     def filter(self, action: Action=None, gender: Gender=None) -> list[str]:
         f = ["oleg=pepeg"]
         if action:
-            f.append(f"action={action}")
+            f.append(f"action={action.value}")
         if gender:
-            f.append(f"gender={gender}")
+            f.append(f"gender={gender.value}")
         return f
 
     def get_count(self, start: datetime, end: datetime,
@@ -71,6 +78,7 @@ class Redis:
             (full_name, raw_data), *_ = part.items()
             count = int(raw_data[1][0][1])
             _, act, gen = full_name.split(":")
+            act, gen = Action(act), Gender(gen)
             result[act][gen] = count
         return result
     
@@ -116,7 +124,7 @@ class Redis:
         center = datetime_to_unix(datetime(2024, 3, 15, 12))
         spread = 5*3600*1000
 
-        for action, gender in product(("enter", "exit"), ("man", "woman", "kid")):
+        for action, gender in product(Action, Gender):
             times = np.random.normal(center, spread, size=1000)
             times = np.unique(times)
 
@@ -126,8 +134,7 @@ class Redis:
 
 if __name__ == "__main__":
     db = Redis()
-    # db.create_test_data()
+    db.create_test_data()
 
-    pprint(db.get_amount(datetime(2024, 3, 15, 12)))
-    
+    pprint(db.get_amount(datetime(2024, 3, 15, 12), ))
     # print(db.last_update("enter", "man"))
