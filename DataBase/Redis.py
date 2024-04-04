@@ -1,5 +1,7 @@
-from datetime import datetime
+from collections import defaultdict
+from datetime import datetime, timedelta
 from itertools import product
+from pprint import pprint
 from time import mktime
 from typing import Literal
 
@@ -33,6 +35,14 @@ class Redis:
     def labels(self, action: Action, gender: Gender) -> dict[str, str]:
         return {"action": action, "gender": gender, "oleg": "pepeg"}
 
+    def filter(self, action: Action=None, gender: Gender=None) -> list[str]:
+        f = ["oleg=pepeg"]
+        if action:
+            f.append(f"action={action}")
+        if gender:
+            f.append(f"gender={gender}")
+        return f
+
     def get_count(self, start: datetime, end: datetime,
                   action: Action, step: int) -> dict[str, list[tuple[unix_timestamp, int]]]:
         "deprecated, don't use it"
@@ -46,6 +56,23 @@ class Redis:
             _, _, gender = name.rpartition(":")
             res[gender] = value[1]
         return res
+    
+    def get_amount(self, date: datetime, action: Action=None, 
+                   gender: Gender=None) -> dict[Action, dict[Gender, int]]:
+        day_start = datetime_to_unix(date.date())
+        day_lenght = int(timedelta(days=1).total_seconds()*1000)
+        day_end = day_start + day_lenght -1
+
+        response = self.timeseries.mrange(day_start, day_end, self.filter(action, gender),
+                                          aggregation_type="range", bucket_size_msec=day_lenght,
+                                          align="-")
+        result = defaultdict(dict)
+        for part in response:
+            (full_name, raw_data), *_ = part.items()
+            count = int(raw_data[1][0][1])
+            _, act, gen = full_name.split(":")
+            result[act][gen] = count
+        return result
     
     def last_update(self, action: Action, gender: Gender) -> datetime:
         if not self.redis.exists(self.key(action, gender)):
@@ -99,7 +126,8 @@ class Redis:
 
 if __name__ == "__main__":
     db = Redis()
-    db.create_test_data()
+    # db.create_test_data()
 
-    print(db.get_count(datetime.fromtimestamp(0), datetime.now(), "enter", 1*3600*24))
+    pprint(db.get_amount(datetime(2024, 3, 15, 12)))
+    
     # print(db.last_update("enter", "man"))
