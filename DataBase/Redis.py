@@ -97,7 +97,22 @@ class Redis:
         return result
     
     def get_hist(self, date: datetime, n_buckets: int, action: Action=None, 
-                   gender: Gender=None) -> tuple[list[datetime], list[int]]:
+                   gender: Gender=None) -> pd.DataFrame:
+        """
+        Возвращает количество человек в день date с шагом 24/n_buckets часов.
+        Фильтрует по action и gender если указаны.
+
+        :param date: Дата
+        :type date: datetime
+        :param n_buckets: Число значений количества
+        :type n_buckets: int
+        :param action: Действие, defaults to None
+        :type action: Action, optional
+        :param gender: Пол, defaults to None
+        :type gender: Gender, optional
+        :return: Таблица где индекс - datetime время, колонки - action, gender
+        :rtype: pd.DataFrame
+        """
         day_start = datetime_to_unix(date.date())
         day_lenght = int(timedelta(days=1).total_seconds()*1000)
         day_end = day_start + day_lenght
