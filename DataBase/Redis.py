@@ -17,6 +17,7 @@ class Gender(Enum):
     Man = "man"
     Woman = "woman"
     Kid = "kid"
+    Coach = "coach"
 
 class Filter:
     def __init__(self, action: Action|tuple[Action]=None, gender: Gender|tuple[Gender]=None) -> None:
