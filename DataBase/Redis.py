@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from itertools import product
 from random import random
 from time import mktime
 from typing import Literal
@@ -61,7 +62,7 @@ class Redis:
         if self.last_update(action, class_).day == time.day:
             return
         print("I am gona reset counter!")
-        time = datetime_to_unix(time)
+        time = datetime_to_unix(time.date())
         self.timeseries.add(f"{self.people_key}:{action}:{class_}", time, 1)
 
     def increment(self, action: Action, class_: Class_, time: datetime):
@@ -87,14 +88,17 @@ class Redis:
         if input("Вы уверенны что хотите наполнить базу фальшивыми данными? [y/n]: ") != 'y':
             print("Отмена")
             return
+        np.random.seed(1)
         self.remove_all_data(True)
         center = datetime_to_unix(datetime(2024, 3, 15, 12))
         spread = 5*3600*1000
-        times = np.random.normal(center, spread, size=1000)
-        times = np.unique(times)
 
-        for t in times:
-            self.increment("enter", "man", unix_to_datetime(t))
+        for action, gender in product(("enter", "exit"), ("man", "woman", "kid")):
+            times = np.random.normal(center, spread, size=1000)
+            times = np.unique(times)
+
+            for t in times:
+                self.increment(action, gender, unix_to_datetime(t))
 
 
 if __name__ == "__main__":
