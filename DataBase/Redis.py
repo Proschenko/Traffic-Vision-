@@ -66,6 +66,19 @@ class Redis:
     
     def get_amount(self, date: datetime, action: Action=None, 
                    gender: Gender=None) -> dict[Action, dict[Gender, int]]:
+        """
+        Возвращает количество человек совершивших action и принадлежащих gender.
+        Если action или gender не указаны, возвращает все доступные.
+
+        :param date: Дата
+        :type date: datetime
+        :param action: Действие, defaults to None
+        :type action: Action, optional
+        :param gender: Пол, defaults to None
+        :type gender: Gender, optional
+        :return: Словарь ключ - действие, значение - словарь, где ключ - пол, значение - кол-во
+        :rtype: dict[Action, dict[Gender, int]]
+        """
         day_start = datetime_to_unix(date.date())
         day_lenght = int(timedelta(days=1).total_seconds()*1000)
         day_end = day_start + day_lenght -1
