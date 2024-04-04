@@ -1,6 +1,5 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timezone
 from itertools import product
-from random import random
 from time import mktime
 from typing import Literal
 
@@ -8,7 +7,7 @@ import numpy as np
 import redis
 
 Action = Literal["enter", "exit"]
-Class_ = Literal["man", "woman", "kid"]
+Gender = Literal["man", "woman", "kid"]
 
 unix_timestamp = int
 
@@ -18,29 +17,22 @@ def datetime_to_unix(time: datetime) -> unix_timestamp:
 
 
 def unix_to_datetime(time: int) -> datetime:
-    return datetime.fromtimestamp(time / 1000)
+    return datetime.fromtimestamp(time / 1000, tz=timezone.utc)
 
 
 class Redis:
     people_key = "ts_people"
-    action = ["enter", "exit"]
-    class_ = ["man", "woman", "kid"]
 
     def __init__(self) -> None:
         self.redis = redis.Redis(host='localhost', port=6379, decode_responses=True)
         self.timeseries = self.redis.ts()
-
-    def add_data(self, action: str, class_: str, time: datetime, count: int):
-        time = datetime_to_unix(time)
-        self.timeseries.add(f"{self.people_key}:{action}:{class_}", time, count,
-                            labels={"action": action, "class_": class_})
-
-    def get_data(self, action: str, class_: str, start: datetime, end: datetime) -> list[tuple[unix_timestamp, int]]:
-        start, end = map(datetime_to_unix, (start, end))
-        return self.timeseries.range(f"{self.people_key}:{action}:{class_}", start, end)
+    
+    def key(self, action: Action, gender: Gender) -> str:
+        return f"{self.people_key}:{action}:{gender}"
 
     def get_count(self, start: datetime, end: datetime,
                   action: Action, step: int) -> dict[str, list[tuple[unix_timestamp, int]]]:
+        "deprecated, don't use it"
         start, end = map(datetime_to_unix, (start, end))
         bucket = int(step * 1000)
 
@@ -48,34 +40,34 @@ class Redis:
                                       aggregation_type="last", bucket_size_msec=bucket)
         res = dict()
         for (name, value), *_ in map(dict.items, data):
-            _, _, class_ = name.rpartition(":")
-            res[class_] = value[1]
+            _, _, gender = name.rpartition(":")
+            res[gender] = value[1]
         return res
     
-    def last_update(self, action: Action, class_: Class_) -> datetime:
-        if not self.redis.exists(f"{self.people_key}:{action}:{class_}"):
+    def last_update(self, action: Action, gender: Gender) -> datetime:
+        if not self.redis.exists(self.key(action, gender)):
             return datetime.now()
-        time, _ = self.timeseries.get(f"{self.people_key}:{action}:{class_}")
+        time, _ = self.timeseries.get(self.key(action, gender))
         return unix_to_datetime(time)
     
-    def reset_counter(self, action: Action, class_: Class_, time: datetime):
-        if self.last_update(action, class_).day == time.day:
+    def reset_counter(self, action: Action, gender: Gender, time: datetime):
+        if self.last_update(action, gender).day == time.day:
             return
         print("I am gona reset counter!")
         time = datetime_to_unix(time.date())
-        self.timeseries.add(f"{self.people_key}:{action}:{class_}", time, 1)
+        self.timeseries.add(self.key(action, gender), time, 1)
 
-    def increment(self, action: Action, class_: Class_, time: datetime):
-        self.reset_counter(action, class_, time)
+    def increment(self, action: Action, gender: Gender, time: datetime):
+        self.reset_counter(action, gender, time)
         time = datetime_to_unix(time)
-        self.timeseries.incrby(f"{self.people_key}:{action}:{class_}", 1, time,
-                               labels={"action": action, "class_": class_})
+        self.timeseries.incrby(self.key(action, gender), 1, time,
+                               labels={"action": action, "gender": gender})
 
-    def decrement(self, action: Action, class_: Class_, time: datetime):
-        self.reset_counter(action, class_, time)
+    def decrement(self, action: Action, gender: Gender, time: datetime):
+        self.reset_counter(action, gender, time)
         time = datetime_to_unix(time)
-        self.timeseries.decrby(f"{self.people_key}:{action}:{class_}", 1, time,
-                               labels={"action": action, "class_": class_})
+        self.timeseries.decrby(self.key(action, gender), 1, time,
+                               labels={"action": action, "gender": gender})
 
     def remove_all_data(self, force=False):
         if force or input("Вы уверенны что хотите удалить все данные из базы? [y/n]: ") == 'y':
@@ -105,5 +97,5 @@ if __name__ == "__main__":
     db = Redis()
     db.create_test_data()
 
-    # pprint(db.get_count(datetime.fromtimestamp(0), datetime.now(), "enter", 1*3600*24))
+    print(db.get_count(datetime.fromtimestamp(0), datetime.now(), "enter", 1*3600*24))
     # print(db.last_update("enter", "man"))

@@ -7,10 +7,10 @@ from datetime import datetime
 
 import matplotlib.pyplot as plt
 
-from DataBase.Redis import Class_, Redis, unix_to_datetime
+from DataBase.Redis import Gender, Redis, unix_to_datetime
 
 
-def get_data(start_date: datetime, end_date: datetime, gender: Class_ = None, column="enter") -> list:
+def get_data(start_date: datetime, end_date: datetime, gender: Gender = None, column="enter") -> list:
     db = Redis()
     data = db.get_count(start_date, end_date, column, 1)
     if gender:
@@ -19,7 +19,7 @@ def get_data(start_date: datetime, end_date: datetime, gender: Class_ = None, co
         data = data.get("man", []) + data.get("woman", []) + data.get("kid", [])
     return data
 
-def amount_in_out(start_date: datetime, end_date: datetime, gender: Class_ = None) -> tuple[int,int]:
+def amount_in_out(start_date: datetime, end_date: datetime, gender: Gender = None) -> tuple[int,int]:
     data_in = get_data(start_date, end_date, gender, "enter")
     data_out = get_data(start_date, end_date, gender, "exit")
     return len(data_in), len(data_out)
@@ -37,7 +37,7 @@ def water_spilled(start_date: datetime, end_date: datetime) -> int:
     return len(data) * 50
 
 
-def hist_pool_load(start_date: datetime, end_date: datetime, gender: Class_ = None):
+def hist_pool_load(start_date: datetime, end_date: datetime, gender: Gender = None):
     db = Redis()
     entered = get_data(start_date, end_date, gender, "enter")
     exited = get_data(start_date, end_date, gender, "exit")
