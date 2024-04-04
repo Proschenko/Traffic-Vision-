@@ -115,15 +115,32 @@ class Redis:
         :rtype: pd.DataFrame
         """
         filter = filter or Filter()
-        day_start = datetime_to_unix(date.date())
-        day_lenght = int(timedelta(days=1).total_seconds()*1000)
-        day_end = day_start + day_lenght
-        bucket = day_lenght // n_buckets
-        
-        response = self.timeseries.mrange(day_start, day_end-1, filter.filter,
-                                          aggregation_type="range", bucket_size_msec=bucket,
-                                          align="-")
-        index = pd.date_range(date.date(), unix_to_datetime(day_end), n_buckets+1, inclusive="left")
+        start = date.date()
+        end = start + timedelta(days=1)
+        return self.range_aggregation(start, end, n_buckets, filter)
+    
+    def get_hour(self, date: datetime, filter: Filter=None) -> pd.DataFrame:
+        """
+        Возвращает количество человек за час указаный в date.
+
+        :param date: Дата
+        :type date: datetime
+        :param filter: Фильтр действия и пола, defaults to None
+        :type filter: Filter, optional
+        :return: Таблица где индекс - datetime время, колонки - action, gender
+        :rtype: pd.DataFrame
+        """
+        filter = filter or Filter()
+        start = date.replace(minute=0, second=0, microsecond=0)
+        end = start + timedelta(hours=1)
+        return self.range_aggregation(start, end, 1, filter)
+    
+    def range_aggregation(self, start: datetime, end: datetime, n_buckets: int, filter: Filter):
+        bucket = int((end-start).total_seconds()*1000)
+        start_unxi, end_unix = map(datetime_to_unix, (start, end))
+        response = self.timeseries.mrange(start_unxi, end_unix-1, filter.filter, align="-",
+                                          aggregation_type="range", bucket_size_msec=bucket)
+        index = pd.date_range(start, end, n_buckets+1, inclusive="left")
         actions = filter.actions
         genders = filter.genders
 
@@ -138,6 +155,7 @@ class Redis:
                 time = unix_to_datetime(time)
                 result.at[time, (act, gen)] = count
         return result
+    
 
     def last_update(self, key: Key) -> datetime:
         if not self.redis.exists(key.key):
@@ -199,12 +217,12 @@ class Redis:
 if __name__ == "__main__":
     from matplotlib import pyplot as plt
     db = Redis()
-    db.create_test_data()
+    # db.create_test_data()
 
-    res = db.get_hist(datetime(2024, 3, 15, 12), 12)
+    res = db.get_hour(datetime(2024, 4, 4, 14))
     print(res)
-    print()
-    res.plot(kind='bar')
-    plt.xticks(rotation=45, ha='right')
-    plt.show()
+    # print()
+    # res.plot(kind='bar')
+    # plt.xticks(rotation=45, ha='right')
+    # plt.show()
 
