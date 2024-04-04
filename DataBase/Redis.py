@@ -161,6 +161,15 @@ class Redis:
         time = datetime_to_unix(time)
         self.timeseries.decrby(key.key, 1, time,
                                labels=key.label)
+    
+    def entered(self, gender: Gender, time: datetime):
+        self.increment(Key(Action.Enter, gender), time)
+    
+    def exited(self, gender: Gender, time: datetime):
+        self.increment(Key(Action.Exit, gender), time)
+
+    def passed(self, gender: Gender, time: datetime):
+        self.decrement(Key(Action.Exit, gender), time)
 
     def remove_all_data(self, force=False):
         if force or input("Вы уверенны что хотите удалить все данные из базы? [y/n]: ") == 'y':
