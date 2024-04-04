@@ -6,6 +6,7 @@ from pprint import pprint
 from time import mktime
 
 import numpy as np
+import pandas as pd
 import redis
 
 
@@ -95,6 +96,32 @@ class Redis:
             result[act][gen] = count
         return result
     
+    def get_hist(self, date: datetime, n_buckets: int, action: Action=None, 
+                   gender: Gender=None) -> tuple[list[datetime], list[int]]:
+        day_start = datetime_to_unix(date.date())
+        day_lenght = int(timedelta(days=1).total_seconds()*1000)
+        day_end = day_start + day_lenght
+        bucket = day_lenght // n_buckets
+        
+        response = self.timeseries.mrange(day_start, day_end-1, self.filter(action, gender),
+                                          aggregation_type="range", bucket_size_msec=bucket,
+                                          align="-")
+        index = pd.date_range(date.date(), unix_to_datetime(day_end), n_buckets+1, inclusive="left")
+        actions = (action, ) if action is not None else list(Action)
+        genders = (gender, ) if gender is not None else list(Gender)
+
+        columns = pd.MultiIndex.from_product((actions, genders))
+        result = pd.DataFrame(0, index=index, columns=columns)
+        
+        for part in response:
+            (full_name, raw_data), *_ = part.items()
+            _, act, gen = full_name.split(":")
+            act, gen = Action(act), Gender(gen)
+            for time, count in raw_data[1]:
+                time = unix_to_datetime(time)
+                result.at[time, (act, gen)] = count
+        return result
+
     def last_update(self, action: Action, gender: Gender) -> datetime:
         if not self.redis.exists(self.key(action, gender)):
             return datetime.now()
@@ -146,8 +173,15 @@ class Redis:
 
 
 if __name__ == "__main__":
+    from matplotlib import pyplot as plt
+    import matplotlib.dates as mdates
     db = Redis()
-    db.create_test_data()
+    # db.create_test_data()
 
-    pprint(db.get_amount(datetime(2024, 3, 15, 12), ))
-    # print(db.last_update("enter", "man"))
+    res = db.get_hist(datetime(2024, 3, 15, 12), 12, action=Action.Enter)
+    print(res)
+    print()
+    res.plot(kind='bar')
+    plt.xticks(rotation=45, ha='right')
+    plt.show()
+
