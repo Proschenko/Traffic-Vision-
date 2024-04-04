@@ -3,6 +3,7 @@ from random import random
 from time import mktime
 from typing import Literal
 
+import numpy as np
 import redis
 
 Action = Literal["enter", "exit"]
@@ -87,30 +88,18 @@ class Redis:
             print("Отмена")
             return
         self.remove_all_data(True)
-        start_time = datetime(2000, 6, 15)
-        delta_time = timedelta(seconds=10)
-        passed = 0
-        for _ in range(1000):
-            passed += 25
-            now = start_time + delta_time * passed
-            if random() < 0.25:
-                self.decrement("exit", "man", now)
-            else:
-                self.increment("exit", "man", now)
-        passed = 0
-        for _ in range(1000):
-            passed += 25
-            now = start_time + delta_time * passed
-            if random() < 0.25:
-                self.decrement("enter", "man", now)
-            else:
-                self.increment("enter", "man", now)
+        center = datetime_to_unix(datetime(2024, 3, 15, 12))
+        spread = 5*3600*1000
+        times = np.random.normal(center, spread, size=1000)
+        times = np.unique(times)
+
+        for t in times:
+            self.increment("enter", "man", unix_to_datetime(t))
 
 
 if __name__ == "__main__":
     db = Redis()
-    db.remove_all_data()
     db.create_test_data()
 
     # pprint(db.get_count(datetime.fromtimestamp(0), datetime.now(), "enter", 1*3600*24))
-    print(db.last_update("enter", "man"))
+    # print(db.last_update("enter", "man"))
