@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from itertools import product
 from time import mktime
-from typing import Sequence
+from typing import NamedTuple, Sequence
 
 import numpy as np
 import pandas as pd
@@ -35,15 +35,28 @@ class Filter:
             return s[0].value
         return f"({','.join(e.value for e in s)})"
     
-    def filter(self) -> list[str]:
-        a = [f"action={self.tuple_to_str(self.actions)}", 
-             f"gender={self.tuple_to_str(self.genders)}"]
+    @property
+    def filter(self) -> tuple[str]:
+        a = (f"action={self.tuple_to_str(self.actions)}", 
+             f"gender={self.tuple_to_str(self.genders)}")
         print(a)
         return a
     
     def __str__(self) -> str:
         return f"Filter {self.actions}, {self.genders}"
 
+class Key(NamedTuple):
+    people_key = "ts_people"
+    action: Action
+    gender: Gender
+
+    @property
+    def label(self) -> dict[str, str]:
+        return {"action": self.action.value, "gender": self.gender.value}
+
+    @property
+    def key(self) -> str:
+        return f"{self.people_key}:{self.action.value}:{self.gender.value}"
 
 unix_timestamp = int
 
@@ -63,11 +76,15 @@ class Redis:
         self.redis = redis.Redis(host='localhost', port=6379, decode_responses=True)
         self.timeseries = self.redis.ts()
     
+    def add(self, key: Key, time: datetime, number: int):
+        self.timeseries.add(key.key, datetime_to_unix(time), number,
+                            labels=self.labels(key))
+    
     def key(self, action: Action, gender: Gender) -> str:
         return f"{self.people_key}:{action.value}:{gender.value}"
     
-    def labels(self, action: Action, gender: Gender) -> dict[str, str]:
-        return {"action": action.value, "gender": gender.value, "oleg": "pepeg"}
+    def labels(self, key: Key) -> dict[str, str]:
+        return {"action": key.action.value, "gender": key.gender.value}
 
     def get_count(self, start: datetime, end: datetime,
                   action: Action, step: int) -> dict[str, list[tuple[unix_timestamp, int]]]:
@@ -102,7 +119,7 @@ class Redis:
         day_end = day_start + day_lenght
         bucket = day_lenght // n_buckets
         
-        response = self.timeseries.mrange(day_start, day_end-1, filter.filter(),
+        response = self.timeseries.mrange(day_start, day_end-1, filter.filter,
                                           aggregation_type="range", bucket_size_msec=bucket,
                                           align="-")
         index = pd.date_range(date.date(), unix_to_datetime(day_end), n_buckets+1, inclusive="left")
@@ -121,31 +138,29 @@ class Redis:
                 result.at[time, (act, gen)] = count
         return result
 
-    def last_update(self, action: Action, gender: Gender) -> datetime:
-        if not self.redis.exists(self.key(action, gender)):
+    def last_update(self, key: Key) -> datetime:
+        if not self.redis.exists(key.key):
             return datetime.now()
-        time, _ = self.timeseries.get(self.key(action, gender))
+        time, _ = self.timeseries.get(key.key)
         return unix_to_datetime(time)
     
-    def reset_counter(self, action: Action, gender: Gender, time: datetime):
-        if self.last_update(action, gender).day == time.day:
+    def reset_counter(self, key: Key, time: datetime):
+        if self.last_update(key).day == time.day:
             return
         print("I am gona reset counter!")
-        time = datetime_to_unix(time.date())
-        self.timeseries.add(self.key(action, gender), time, 0,
-                            labels=self.labels(action, gender))
+        self.add(key, time.date(), 0)
 
-    def increment(self, action: Action, gender: Gender, time: datetime):
-        self.reset_counter(action, gender, time)
+    def increment(self, key: Key, time: datetime):
+        self.reset_counter(key, time)
         time = datetime_to_unix(time)
-        self.timeseries.incrby(self.key(action, gender), 1, time,
-                               labels=self.labels(action, gender))
+        self.timeseries.incrby(key.key, 1, time,
+                               labels=key.label)
 
-    def decrement(self, action: Action, gender: Gender, time: datetime):
-        self.reset_counter(action, gender, time)
+    def decrement(self, key: Key, time: datetime):
+        self.reset_counter(key, time)
         time = datetime_to_unix(time)
-        self.timeseries.decrby(self.key(action, gender), 1, time,
-                               labels=self.labels(action, gender))
+        self.timeseries.decrby(key.key, 1, time,
+                               labels=key.label)
 
     def remove_all_data(self, force=False):
         if force or input("Вы уверенны что хотите удалить все данные из базы? [y/n]: ") == 'y':
@@ -168,7 +183,7 @@ class Redis:
             times = np.unique(times)
 
             for t in times:
-                self.increment(action, gender, unix_to_datetime(t))
+                self.increment(Key(action, gender), unix_to_datetime(t))
 
 
 if __name__ == "__main__":
