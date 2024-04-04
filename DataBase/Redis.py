@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from itertools import product
 from time import mktime
 from typing import Literal
@@ -17,7 +17,7 @@ def datetime_to_unix(time: datetime) -> unix_timestamp:
 
 
 def unix_to_datetime(time: int) -> datetime:
-    return datetime.fromtimestamp(time / 1000, tz=timezone.utc)
+    return datetime.fromtimestamp(time / 1000)
 
 
 class Redis:
@@ -29,6 +29,9 @@ class Redis:
     
     def key(self, action: Action, gender: Gender) -> str:
         return f"{self.people_key}:{action}:{gender}"
+    
+    def labels(self, action: Action, gender: Gender) -> dict[str, str]:
+        return {"action": action, "gender": gender, "oleg": "pepeg"}
 
     def get_count(self, start: datetime, end: datetime,
                   action: Action, step: int) -> dict[str, list[tuple[unix_timestamp, int]]]:
@@ -55,19 +58,20 @@ class Redis:
             return
         print("I am gona reset counter!")
         time = datetime_to_unix(time.date())
-        self.timeseries.add(self.key(action, gender), time, 1)
+        self.timeseries.add(self.key(action, gender), time, 0,
+                            labels=self.labels(action, gender))
 
     def increment(self, action: Action, gender: Gender, time: datetime):
         self.reset_counter(action, gender, time)
         time = datetime_to_unix(time)
         self.timeseries.incrby(self.key(action, gender), 1, time,
-                               labels={"action": action, "gender": gender})
+                               labels=self.labels(action, gender))
 
     def decrement(self, action: Action, gender: Gender, time: datetime):
         self.reset_counter(action, gender, time)
         time = datetime_to_unix(time)
         self.timeseries.decrby(self.key(action, gender), 1, time,
-                               labels={"action": action, "gender": gender})
+                               labels=self.labels(action, gender))
 
     def remove_all_data(self, force=False):
         if force or input("Вы уверенны что хотите удалить все данные из базы? [y/n]: ") == 'y':
