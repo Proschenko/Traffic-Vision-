@@ -7,11 +7,11 @@ import numpy as np
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 
-from DataBase.Redis import Redis
+from DataBase.Redis import Gender, Redis
 from Tracker.Debug_drawer import draw_debug
 from Tracker.misc import Location, boxes_center, crop_image, frame_crop
 from Tracker.People import People
-from Tracker.StreamCatcher import Stream
+from Tracker.StreamCatcher import ParallelStream
 
 
 class Action(Enum):
@@ -56,9 +56,8 @@ class Tracking:
                       "tracker": "botsort.yaml"}
         
         frame_step = 4
-        stream = Stream(rtsp_url)
-
-        for frame in stream.iter_frames(frame_step):
+        stream = ParallelStream(rtsp_url)
+        for frame in stream.iter_actual():
             frame = crop_image(frame, **frame_crop)
 
             # Process the frame with your YOLO model
@@ -117,13 +116,13 @@ class Tracking:
             match action:
                 case Action.Entered:
                     self.in_out[0] += 1
-                    self.redis.increment("enter", person.model_class, time)
+                    self.redis.entered(Gender(person.model_class), time)
                 case Action.Exited:
                     self.in_out[1] += 1
-                    self.redis.increment("exit", person.model_class, time)
+                    self.redis.exited(Gender(person.model_class), time)
                 case Action.Passed:
                     self.in_out[1] -= 1
-                    self.redis.decrement("exit", person.model_class, time)
+                    self.redis.passed(Gender(person.model_class), time)
             if action is not None:
                 print(f"На данный момент Вышло: {self.in_out[1]} Зашло: {self.in_out[0]}")
             if history is None:
