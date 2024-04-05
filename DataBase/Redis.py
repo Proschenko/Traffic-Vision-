@@ -8,6 +8,8 @@ import numpy as np
 import pandas as pd
 import redis
 
+class RedisError(Exception):
+    """ Exception from redis """
 
 class Action(Enum):
     Enter = "enter"
@@ -75,6 +77,10 @@ class Redis:
 
     def __init__(self) -> None:
         self.redis = redis.Redis(host='localhost', port=6379, decode_responses=True)
+        try:
+            self.redis.ping()
+        except redis.exceptions.ConnectionError:
+            raise RedisError("Can't connect to radis")
         self.timeseries = self.redis.ts()
     
     def add(self, key: Key, time: datetime, number: int):
@@ -218,6 +224,7 @@ if __name__ == "__main__":
     from matplotlib import pyplot as plt
     db = Redis()
     # db.create_test_data()
+    print("111")
 
     res = db.get_hour(datetime(2024, 4, 4, 14))
     print(res)
