@@ -42,12 +42,6 @@ def hist_pool_load(start_date: datetime, end_date: datetime, gender: Gender = No
     entered = get_data(start_date, end_date, gender, "enter")
     exited = get_data(start_date, end_date, gender, "exit")
 
-    if gender:
-        entered = entered.get(gender, [])
-        exited = exited.get(gender, [])
-    else:
-        entered = entered.get("man", []) + entered.get("woman", []) + entered.get("kid", [])
-        exited = exited.get("man", []) + exited.get("woman", []) + exited.get("kid", [])
     if not (entered and exited):
         print("Нет данных за указанный период")
         return
