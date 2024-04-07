@@ -19,7 +19,6 @@ class Gender(Enum):
     Man = "man"
     Woman = "woman"
     Kid = "kid"
-    Coach = "coach"
 
 class Filter:
     def __init__(self, action: Action|tuple[Action]=None, gender: Gender|tuple[Gender]=None) -> None:
@@ -42,7 +41,6 @@ class Filter:
     def filter(self) -> tuple[str]:
         a = (f"action={self.tuple_to_str(self.actions)}", 
              f"gender={self.tuple_to_str(self.genders)}")
-        print(a)
         return a
     
     def __str__(self) -> str:
@@ -223,11 +221,12 @@ class Redis:
 if __name__ == "__main__":
     from matplotlib import pyplot as plt
     db = Redis()
+    db.remove_all_data()
     # db.create_test_data()
-    print("111")
+    # print("111")
 
-    res = db.get_hour(datetime(2024, 4, 4, 14))
-    print(res)
+    # res = db.get_hour(datetime(2024, 4, 4, 14))
+    # print(res)
     # print()
     # res.plot(kind='bar')
     # plt.xticks(rotation=45, ha='right')
