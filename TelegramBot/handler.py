@@ -12,12 +12,11 @@ from DataBase.Statistics import amount_in_out, hist_pool_load, water_spilled
 
 def in_out_handler(bot,users):
     delta = timedelta(hours=1)
-    end_time = datetime.now()
-    end_time = end_time - timedelta(minutes=end_time.minute, seconds=end_time.second, microseconds=end_time.microsecond)
-    start_time = end_time - delta
-    print(start_time, end_time)
+    delta = timedelta(hours=0)
+    start_time = datetime.now() - delta
+    print(f"Отправляю рассылку: {start_time = }")
     try:
-        data = amount_in_out(start_time, end_time)
+        data = amount_in_out(start_time, start_time)
         for user in users:
                     bot.send_message(user, f"Вошло:{data[0]}, вышло:{data[1]}")
     except Exception:
