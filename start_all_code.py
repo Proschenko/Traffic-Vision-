@@ -6,4 +6,4 @@ if __name__ == "__main__":
     folder = Path(dirname(__file__))
     for file in ("run_bot.py", "run_tracker.py"):
         path = str(folder / file)
-        subprocess.Popen(["python", path], shell=True)
+        subprocess.Popen(["python", path])

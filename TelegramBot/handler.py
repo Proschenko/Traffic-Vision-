@@ -1,28 +1,29 @@
 if __name__ == "__main__":
     import sys
     from os.path import dirname
+
     sys.path.append(dirname(__file__).rpartition('\\')[0])
-	
+
 import os
 import sys
 from datetime import datetime, timedelta
 
-from DataBase.Statistics import amount_in_out, hist_pool_load, water_spilled
+from DataBase.Statistics import amount_in_out, hist_pool_load, water_spilled, Gender
 
 
-def in_out_handler(bot,users):
-    delta = timedelta(hours=1)
+def in_out_handler(bot, users):
+    # delta = timedelta(hours=1)
     delta = timedelta(hours=0)
     start_time = datetime.now() - delta
     print(f"Отправляю рассылку: {start_time = }")
     try:
         data = amount_in_out(start_time, start_time)
         for user in users:
-                    bot.send_message(user, f"Вошло:{data[0]}, вышло:{data[1]}")
+            bot.send_message(user, f"Вошло:{data[0]}, вышло:{data[1]}")
     except Exception:
         print("Пожалуйста, сообщите администратору, что редис не работает.")
-        
-        
+
+
 def datetime_one_day_from_str(date):
     delta = timedelta(days=1)
     date = date.text

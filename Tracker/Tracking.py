@@ -126,7 +126,7 @@ class Tracking:
                     self.in_out[1] -= 1
                     self.redis.passed(Gender(person.model_class), time)
             if action is not None:
-                print(f"На данный момент Вышло: {self.in_out[1]} Зашло: {self.in_out[0]}")
+                print(f"На данный момент Зашло: {self.in_out[0]} Вышло: {self.in_out[1]}")
             if history is None:
                 self.id_location[person.id_person] = State(close, action is Action.Entered)
             else:

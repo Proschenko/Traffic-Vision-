@@ -8,48 +8,55 @@ import numpy as np
 import pandas as pd
 import redis
 
+
 class RedisError(Exception):
     """ Exception from redis """
+
 
 class Action(Enum):
     Enter = "enter"
     Exit = "exit"
+
 
 class Gender(Enum):
     Man = "man"
     Woman = "woman"
     Kid = "kid"
 
+
 class Filter:
-    def __init__(self, action: Action|tuple[Action]=None, gender: Gender|tuple[Gender]=None) -> None:
+    def __init__(self, action: Action | tuple[Action] = None, gender: Gender | tuple[Gender] = None) -> None:
         self.actions = self.parse(action, Action)
         self.genders = self.parse(gender, Gender)
 
-    def parse(self, something, anything: Enum) -> tuple[Enum]:
+    @staticmethod
+    def parse(something, anything: Enum) -> tuple[Enum]:
         if something is None:
             something = tuple(anything)
         if not isinstance(something, Sequence):
-            something = (something, )
+            something = (something,)
         return something
-    
-    def tuple_to_str(self, s: tuple[Enum]) -> str:
+
+    @staticmethod
+    def tuple_to_str(s: tuple[Enum]) -> str:
         if len(s) == 1:
             return s[0].value
         return f"({','.join(e.value for e in s)})"
-    
+
     @property
     def filter(self) -> tuple[str]:
-        a = (f"action={self.tuple_to_str(self.actions)}", 
+        a = (f"action={self.tuple_to_str(self.actions)}",
              f"gender={self.tuple_to_str(self.genders)}")
         return a
-    
+
     def __str__(self) -> str:
         return f"Filter {self.actions}, {self.genders}"
 
+
 class Key(NamedTuple):
-    people_key = "ts_people"
     action: Action
     gender: Gender
+    people_key = "ts_people"
 
     @property
     def label(self) -> dict[str, str]:
@@ -58,6 +65,7 @@ class Key(NamedTuple):
     @property
     def key(self) -> str:
         return f"{self.people_key}:{self.action.value}:{self.gender.value}"
+
 
 unix_timestamp = int
 
@@ -80,15 +88,16 @@ class Redis:
         except redis.exceptions.ConnectionError:
             raise RedisError("Can't connect to radis")
         self.timeseries = self.redis.ts()
-    
+
     def add(self, key: Key, time: datetime, number: int):
         self.timeseries.add(key.key, datetime_to_unix(time), number,
                             labels=self.labels(key))
-    
+
     def key(self, action: Action, gender: Gender) -> str:
         return f"{self.people_key}:{action.value}:{gender.value}"
-    
-    def labels(self, key: Key) -> dict[str, str]:
+
+    @staticmethod
+    def labels(key: Key) -> dict[str, str]:
         return {"action": key.action.value, "gender": key.gender.value}
 
     def get_count(self, start: datetime, end: datetime,
@@ -105,7 +114,7 @@ class Redis:
             res[gender] = value[1]
         return res
 
-    def get_hist(self, date: datetime, n_buckets: int, filter: Filter=None) -> pd.DataFrame:
+    def get_hist(self, date: datetime, n_buckets: int, filter: Filter = None) -> pd.DataFrame:
         """
         Возвращает количество человек в день date с шагом 24/n_buckets часов.
 
@@ -122,8 +131,8 @@ class Redis:
         start = date.date()
         end = start + timedelta(days=1)
         return self.range_aggregation(start, end, n_buckets, filter)
-    
-    def get_hour(self, date: datetime, filter: Filter=None) -> pd.DataFrame:
+
+    def get_hour(self, date: datetime, filter: Filter = None) -> pd.DataFrame:
         """
         Возвращает количество человек за час указаный в date.
 
@@ -137,20 +146,24 @@ class Redis:
         filter = filter or Filter()
         start = date.replace(minute=0, second=0, microsecond=0)
         end = start + timedelta(hours=1)
+        print(f"Вырезаю данные начиная с {start} до {end}")
         return self.range_aggregation(start, end, 1, filter)
-    
+
     def range_aggregation(self, start: datetime, end: datetime, n_buckets: int, filter: Filter):
-        bucket = int((end-start).total_seconds()*1000)
+        bucket = int((end - start).total_seconds() * 1000)
         start_unxi, end_unix = map(datetime_to_unix, (start, end))
-        response = self.timeseries.mrange(start_unxi, end_unix-1, filter.filter, align="-",
+        print(datetime_to_unix(datetime.now()))
+        print(self.timeseries.mrange(start_unxi, end_unix - 1, filter.filter, align="-",
+                                     aggregation_type="range", bucket_size_msec=bucket))
+        response = self.timeseries.mrange(start_unxi, end_unix - 1, filter.filter, align="-",
                                           aggregation_type="range", bucket_size_msec=bucket)
-        index = pd.date_range(start, end, n_buckets+1, inclusive="left")
+        index = pd.date_range(start, end, n_buckets + 1, inclusive="left")
         actions = filter.actions
         genders = filter.genders
 
         columns = pd.MultiIndex.from_product((actions, genders))
         result = pd.DataFrame(0, index=index, columns=columns)
-        
+
         for part in response:
             (full_name, raw_data), *_ = part.items()
             _, act, gen = full_name.split(":")
@@ -159,14 +172,13 @@ class Redis:
                 time = unix_to_datetime(time)
                 result.at[time, (act, gen)] = count
         return result
-    
 
     def last_update(self, key: Key) -> datetime:
         if not self.redis.exists(key.key):
             return datetime.now()
         time, _ = self.timeseries.get(key.key)
         return unix_to_datetime(time)
-    
+
     def reset_counter(self, key: Key, time: datetime):
         if self.last_update(key).day == time.day:
             return
@@ -184,10 +196,10 @@ class Redis:
         time = datetime_to_unix(time)
         self.timeseries.decrby(key.key, 1, time,
                                labels=key.label)
-    
+
     def entered(self, gender: Gender, time: datetime):
         self.increment(Key(Action.Enter, gender), time)
-    
+
     def exited(self, gender: Gender, time: datetime):
         self.increment(Key(Action.Exit, gender), time)
 
@@ -207,8 +219,9 @@ class Redis:
             return
         np.random.seed(1)
         self.remove_all_data(True)
-        center = datetime_to_unix(datetime(2024, 3, 15, 12))
-        spread = 5*3600*1000
+        # center = datetime_to_unix(datetime(2024, 3, 15, 12))
+        center = datetime_to_unix(datetime.now())
+        spread = 5 * 3600 * 1000
 
         for action, gender in product(Action, Gender):
             times = np.random.normal(center, spread, size=1000)
@@ -218,17 +231,27 @@ class Redis:
                 self.increment(Key(action, gender), unix_to_datetime(t))
 
 
-if __name__ == "__main__":
-    from matplotlib import pyplot as plt
-    db = Redis()
-    db.remove_all_data()
-    # db.create_test_data()
-    # print("111")
+# if __name__ == "__main__":
+#     from matplotlib import pyplot as plt
+#
+#     db = Redis()
+#
+#     res = db.get_hist(datetime.now(), 24)
+#     res.plot(kind='bar')
+#     plt.xticks(rotation=45, ha='right')
+#     plt.show()
 
-    # res = db.get_hour(datetime(2024, 4, 4, 14))
-    # print(res)
-    # print()
-    # res.plot(kind='bar')
-    # plt.xticks(rotation=45, ha='right')
-    # plt.show()
+# if __name__ == "__main__":
+#     from matplotlib import pyplot as plt
+#
+# db = Redis()
+# db.remove_all_data()
+# db.create_test_data()
+# print("111")
 
+# res = db.get_hour(datetime(2024, 4, 4, 14))
+# print(res)
+# print()
+# res.plot(kind='bar')
+# plt.xticks(rotation=45, ha='right')
+# plt.show()

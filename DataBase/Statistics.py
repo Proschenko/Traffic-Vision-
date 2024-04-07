@@ -1,8 +1,9 @@
 if __name__ == "__main__":
     import sys
     from os.path import dirname
+
     sys.path.append(dirname(__file__).rpartition('\\')[0])
-	
+
 from datetime import datetime
 
 import matplotlib.pyplot as plt
@@ -19,11 +20,14 @@ def get_data(start_date: datetime, end_date: datetime, gender: Gender = None, co
         data = data.get("man", []) + data.get("woman", []) + data.get("kid", [])
     return data
 
-def amount_in_out(start_date: datetime, end_date: datetime, gender: Gender = None) -> tuple[int,int]:
+
+def amount_in_out(start_date: datetime, end_date: datetime, gender: Gender = None) -> tuple[int, int]:
     data = Redis().get_hour(start_date, Filter(gender=gender))
+    print(data)
     data_in = data[Action.Enter].sum(1).iloc[0]
     data_out = data[Action.Exit].sum(1).iloc[0]
     return data_in, data_out
+
 
 def water_spilled(start_date: datetime, end_date: datetime) -> int:
     """

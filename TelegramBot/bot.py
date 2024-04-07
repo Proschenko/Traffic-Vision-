@@ -1,6 +1,7 @@
 if __name__ == "__main__":
     import sys
     from os.path import dirname
+
     sys.path.append(dirname(__file__).rpartition('\\')[0])
 
 import time
@@ -23,6 +24,9 @@ def start_schedule():
     for i in range(24):
         tmp_time = f"{str(i).zfill(2)}:00"
         schedule.every().day.at(tmp_time).do(lambda: in_out_handler(bot, chat))
+        for j in range(1, 60, 1):
+            tmp_time = f"{str(i).zfill(2)}:{str(j).zfill(2)}"
+            schedule.every().day.at(tmp_time).do(lambda: in_out_handler(bot, chat))
 
     while True:
         schedule.run_pending()
@@ -78,13 +82,15 @@ def callback_query(call):
 def polling():
     bot.polling(none_stop=True)
 
+
 def main():
     updates_thread = Thread(target=start_schedule)
     polling_thread = Thread(target=polling)
 
     updates_thread.start()
     polling_thread.start()
-    
+
+
 # RUN
 if __name__ == "__main__":
     main()
