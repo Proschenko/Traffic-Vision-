@@ -7,7 +7,7 @@ from datetime import datetime
 
 import matplotlib.pyplot as plt
 
-from DataBase.Redis import Gender, Redis, unix_to_datetime
+from DataBase.Redis import Gender, Redis, unix_to_datetime, Action, Filter
 
 
 def get_data(start_date: datetime, end_date: datetime, gender: Gender = None, column="enter") -> list:
@@ -20,10 +20,10 @@ def get_data(start_date: datetime, end_date: datetime, gender: Gender = None, co
     return data
 
 def amount_in_out(start_date: datetime, end_date: datetime, gender: Gender = None) -> tuple[int,int]:
-    data_in = get_data(start_date, end_date, gender, "enter")
-    data_out = get_data(start_date, end_date, gender, "exit")
-    return len(data_in), len(data_out)
-
+    data = Redis().get_hour(start_date, Filter(gender=gender))
+    data_in = data[Action.Enter].sum(1).iloc[0]
+    data_out = data[Action.Exit].sum(1).iloc[0]
+    return data_in, data_out
 
 def water_spilled(start_date: datetime, end_date: datetime) -> int:
     """
@@ -77,4 +77,5 @@ def chemistry(smth=True):
 
 
 if __name__ == "__main__":
-    hist_pool_load(datetime(2000, 6, 15, 0), datetime(2000, 6, 15, 15), "woman")
+    print(amount_in_out(datetime.now(), datetime.now()))
+    # hist_pool_load(datetime(2000, 6, 15, 0), datetime(2000, 6, 15, 15), "woman")
