@@ -19,7 +19,7 @@ def in_out_handler(bot, users):
     try:
         data = amount_in_out(start_time, start_time)
         for user in users:
-            bot.send_message(user, f"Вошло:{data[0]}, вышло:{data[1]}")
+            bot.send_message(user, f"За сутки вошло: {data[0]}, вышло: {data[1]}")
     except Exception:
         print("Пожалуйста, сообщите администратору, что редис не работает.")
 

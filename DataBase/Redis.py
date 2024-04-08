@@ -152,9 +152,9 @@ class Redis:
     def range_aggregation(self, start: datetime, end: datetime, n_buckets: int, filter: Filter):
         bucket = int((end - start).total_seconds() * 1000)
         start_unxi, end_unix = map(datetime_to_unix, (start, end))
-        print(datetime_to_unix(datetime.now()))
-        print(self.timeseries.mrange(start_unxi, end_unix - 1, filter.filter, align="-",
-                                     aggregation_type="range", bucket_size_msec=bucket))
+        # print(datetime_to_unix(datetime.now()))
+        # print(self.timeseries.mrange(start_unxi, end_unix - 1, filter.filter, align="-",
+        #                              aggregation_type="range", bucket_size_msec=bucket))
         response = self.timeseries.mrange(start_unxi, end_unix - 1, filter.filter, align="-",
                                           aggregation_type="range", bucket_size_msec=bucket)
         index = pd.date_range(start, end, n_buckets + 1, inclusive="left")
