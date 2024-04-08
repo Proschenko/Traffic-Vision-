@@ -1,8 +1,8 @@
 if __name__ == "__main__":
     import sys
     from os.path import dirname
+
     sys.path.append(dirname(__file__).rpartition('\\')[0])
-	
 import os
 
 import cv2
@@ -33,7 +33,7 @@ def delete_files_in_folder(folder_path):
 
 
 # region Этот код используется для самообучения модели
-my_best_model = "runs/detect/train/weights/best.pt"  # Загружаем модель
+my_best_model = "runs/detect/train5/weights/best.pt"  # Загружаем модель
 model = YOLO(my_best_model)
 # Отсюда берем кадры
 directory = r"D:\я у мамы программист\3 курс 2 семестр IT-проекты\Traffic-Vision-\self development images"

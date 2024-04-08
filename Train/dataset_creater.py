@@ -14,7 +14,7 @@ from Tracker.Tracking import Tracking
 
 model_args = {"iou": 0, "conf": 0.2,
               "imgsz": 640, "verbose": False}
-model = YOLO('runs/detect/train2/weights/best.pt')
+model = YOLO('runs/detect/train5/weights/best.pt')
 tracker = Tracking(model)
 
 path = ("D:/я у мамы программист"
