@@ -9,7 +9,7 @@ from ultralytics.engine.results import Results
 
 from DataBase.Redis import Gender, Redis
 from Tracker.Debug_drawer import draw_debug
-from Tracker.misc import Location, boxes_center, crop_image, frame_crop
+from Tracker.misc import Location, boxes_center, crop_image, frame_crop, fill_black
 from Tracker.People import People
 from Tracker.StreamCatcher import ParallelStream
 
@@ -59,6 +59,7 @@ class Tracking:
         stream = ParallelStream(rtsp_url)
         for frame in stream.iter_actual():
             frame = crop_image(frame, **frame_crop)
+            frame = fill_black(frame)
 
             # Process the frame with your YOLO model
             results = self.model.track(frame, **model_args)[0]
