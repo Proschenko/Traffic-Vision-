@@ -5,7 +5,7 @@ import numpy as np
 
 frame_crop = {
     "width": 950,
-    "height": 300
+    "height": 950
 }
 
 
@@ -39,6 +39,14 @@ def crop_image(image: MatLike,
                top=None, height=None) -> MatLike:
     return image[top or 0: height or -1,
                  left or 0: width or -1]
+
+def fill_black(frame):
+    height, width, _ = frame.shape
+
+    if height > 350:
+        frame[300:, :, :] = 0  # Закрашиваем часть изображения, превышающую 300 пикселей по высоте, в черный цвет
+
+    return frame
 
 def dist(x1: float, y1: float, x2: float, y2: float) -> float:
     """
