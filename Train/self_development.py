@@ -8,7 +8,7 @@ import cv2
 from tqdm import tqdm
 from ultralytics import YOLO
 
-from Tracker.misc import crop_image, frame_crop
+from Tracker.misc import crop_image, frame_crop, fill_black
 
 
 def delete_files_in_folder(folder_path):
@@ -48,6 +48,7 @@ for img_name in tqdm(img_list, desc="Detected frame", unit="frame"):
     # print(img_filepath)
     img = cv2.imread(img_filepath)
     img = crop_image(img, **frame_crop)
+    img = fill_black(img)
     img_copy = img
 
     # получаем ширину и высоту картинки
@@ -79,7 +80,7 @@ for img_name in tqdm(img_list, desc="Detected frame", unit="frame"):
         annot_lines.append(annotation)
 
     # копируем картинку в папку базы изображений для импорта
-    cv2.imwrite(os.path.join(train_images_path, img_name), img_copy)
+    cv2.imwrite(os.path.join(train_images_path + r"\train\images", img_name), img_copy)
 
     # определить расширение изображения (png или jpg)
     img_extension = os.path.splitext(img_name)[-1].lower()
