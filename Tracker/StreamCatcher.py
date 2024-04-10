@@ -71,7 +71,7 @@ class ParallelStream:
     def iter_actual(self) -> Generator[tuple[MatLike, int], None, None]:
         try: 
             while True:
-                pos, frame = self.data.get(timeout=10)
+                pos, frame = self.data.get(timeout=20)
                 self.position = pos
                 yield frame
         except Empty:

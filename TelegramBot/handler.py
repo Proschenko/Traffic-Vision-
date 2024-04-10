@@ -12,16 +12,18 @@ from DataBase.Statistics import amount_in_out, hist_pool_load, water_spilled, Ge
 
 
 def in_out_handler(bot, users):
-    # delta = timedelta(hours=1)
-    delta = timedelta(hours=0)
+    delta = timedelta(hours=1)
+    # delta = timedelta(hours=0)
     start_time = datetime.now() - delta
+    start_time = start_time.replace(minute=0, second=0, microsecond=0)
+    end_time = start_time + timedelta(hours=1)
     print(f"Отправляю рассылку: {start_time = }")
     try:
-        data = amount_in_out(start_time, start_time)
+        data = amount_in_out(start_time, end_time)
         for user in users:
-            bot.send_message(user, f"За сутки вошло: {data[0]}, вышло: {data[1]}")
+            bot.send_message(user, f"С {start_time} до {end_time} вошло: {data[0]}, вышло: {data[1]}")
     except Exception:
-        print("Пожалуйста, сообщите администратору, что редис не работает.")
+        print("Пожалуйста, сообщите администратору, что редис не работает или мне не дали доступ к чату.")
 
 
 def datetime_one_day_from_str(date):

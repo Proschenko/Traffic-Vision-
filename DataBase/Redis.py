@@ -132,7 +132,7 @@ class Redis:
         end = start + timedelta(days=1)
         return self.range_aggregation(start, end, n_buckets, filter)
 
-    def get_hour(self, date: datetime, filter: Filter = None) -> pd.DataFrame:
+    def get_hour(self, start_date: datetime, end_date: datetime, filter: Filter = None) -> pd.DataFrame:
         """
         Возвращает количество человек за час указаный в date.
 
@@ -144,10 +144,8 @@ class Redis:
         :rtype: pd.DataFrame
         """
         filter = filter or Filter()
-        start = date.replace(minute=0, second=0, microsecond=0)
-        end = start + timedelta(hours=1)
-        print(f"Вырезаю данные начиная с {start} до {end}")
-        return self.range_aggregation(start, end, 1, filter)
+        print(f"Вырезаю данные начиная с {start_date} до {end_date}")
+        return self.range_aggregation(start_date, end_date, 1, filter)
 
     def range_aggregation(self, start: datetime, end: datetime, n_buckets: int, filter: Filter):
         bucket = int((end - start).total_seconds() * 1000)
