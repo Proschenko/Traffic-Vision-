@@ -60,6 +60,7 @@ class Stream:
 
 class ParallelStream:
     def __init__(self, rtsp_url: str) -> None:
+        self.rtsp_url = rtsp_url
         self.data = Queue(maxsize=1)
 
         self.process = mp.Process(target=self.catch_frames, 
@@ -69,13 +70,19 @@ class ParallelStream:
         self.position = 0
     
     def iter_actual(self) -> Generator[tuple[MatLike, int], None, None]:
-        try: 
-            while True:
-                pos, frame = self.data.get(timeout=10)
-                self.position = pos
-                yield frame
-        except Empty:
-            raise StreamException("Connection time out")
+        while True:
+            try: 
+                while True:
+                    pos, frame = self.data.get(timeout=10)
+                    self.position = pos
+                    yield frame
+            except Empty:
+                print(StreamException("Connection time out"))
+                pass
+            self.process.terminate()
+            self.process = mp.Process(target=self.catch_frames, 
+                                  args=[self.rtsp_url, self.data])
+            self.process.start()
 
     @staticmethod
     def catch_frames(rtsp_url: str, output: Queue):
