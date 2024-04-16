@@ -111,7 +111,7 @@ class Tracking:
 
     def tracking(self, persons: list[People], time: datetime):
         for person in persons:
-            if person.model_class == "coach":
+            if person.model_class in ("coach", "cleaner"):
                 continue
             close = person.is_close()
             history = self.id_location.get(person.id_person, None)
