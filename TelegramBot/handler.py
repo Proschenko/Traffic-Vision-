@@ -25,6 +25,23 @@ def in_out_handler(bot, users):
     except Exception:
         print("Пожалуйста, сообщите администратору, что редис не работает или мне не дали доступ к чату.")
 
+def day_stat_handle(bot, users, last=True):
+    delta = timedelta(hours=23, minutes=59, seconds=59)
+    start_time = datetime.now() - delta if last else datetime.now()
+    start_time = start_time.replace(hour=0, minute=0, second=0, microsecond=0)
+    end_time = start_time + delta
+    print(f"Отправляю рассылку: {start_time = }")
+    try:
+        data = amount_in_out(start_time, end_time)
+        for user in users:
+            # print(f"Статистика за {start_time.day} число")
+            # print(f"С {start_time} до {end_time} вошло: {data[0]}, вышло: {data[1]}")
+            bot.send_message(user, f"Статистика за {start_time.day} число")
+            bot.send_message(user, f"С {start_time} до {end_time} вошло: {data[0]}, вышло: {data[1]}")
+    except Exception:
+        print("Пожалуйста, сообщите администратору, что редис не работает или мне не дали доступ к чату.")
+
+
 
 def datetime_one_day_from_str(date):
     delta = timedelta(days=1)
