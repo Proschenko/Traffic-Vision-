@@ -12,7 +12,7 @@ import telebot
 from telebot import types
 
 from TelegramBot import config
-from TelegramBot.handler import handle_pool_hist, handle_water, in_out_handler
+from TelegramBot.handler import handle_pool_hist, handle_water, in_out_handler, day_stat_handle
 
 bot = telebot.TeleBot(config.TOKEN)
 
@@ -22,6 +22,8 @@ chat = [-1002019934484, -4195059270]  # айди чатов, куда идёт �
 
 def start_schedule():
     global users
+    schedule.every().day.at("06:00").do(lambda: day_stat_handle(bot, chat, True))
+    schedule.every().day.at("22:00").do(lambda: day_stat_handle(bot, chat, False))
     for i in range(24):
         tmp_time = f"{str(i).zfill(2)}:00"
         schedule.every().day.at(tmp_time).do(lambda: in_out_handler(bot, chat))
