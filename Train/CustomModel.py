@@ -17,7 +17,7 @@ class CustomYOLOv8Model:
     def __init__(self, dataset_version):
         self.dataset_version = dataset_version
         self.rf = Roboflow(api_key="rBzIu5I6ccC0pMQqHBlF")
-        self.dataset_name = "traffic-control-№2"
+        self.dataset_name = "traffic-control-№3"
 
     # region чтение датасета
     @staticmethod
@@ -48,7 +48,7 @@ class CustomYOLOv8Model:
         :return: путь к датасету
         :rtype: str
         """
-        project = self.rf.workspace("traffic-vision-workspace-kb8fc").project("traffic-control-2-wpcdq")
+        project = self.rf.workspace("traffic-vision-workspace-kb8fc").project("traffic-control-3")
         version = project.version(self.dataset_version)
         dataset = version.download("yolov8")
         return dataset.location
