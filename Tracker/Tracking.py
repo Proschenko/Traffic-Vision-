@@ -1,42 +1,75 @@
-from dataclasses import dataclass
 from datetime import datetime, timedelta
-from enum import Enum, auto
 
 import cv2
 import numpy as np
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 
-from DataBase.Redis import Gender, Redis
+from DataBase.Redis import Redis
 from Tracker.Debug_drawer import draw_debug
-from Tracker.misc import Location, boxes_center, crop_image, frame_crop, fill_black
-from Tracker.People import People
+from Tracker.misc import Action, boxes_center, crop_image
+from Tracker.People import Gender, People
 from Tracker.StreamCatcher import ParallelStream
 
+IGNORE = Gender.Cleaner, Gender.Coach
 
-class Action(Enum):
-    Entered = auto()
-    Exited = auto()
-    Passed = auto()
-
-
-@dataclass
 class State:
-    close: bool
-    entering: bool
+    def __init__(self, close: bool, gender: Gender):
+        self.newborn = True
+        self.close = close
+        self.gender_count = [0]*len(Gender)
+        self.update_gender(gender)
 
     def update(self, close: bool):
-        if self.close == close:
-            return
+        self.newborn = self.newborn and self.close == close
         self.close = close
-        self.entering = False
 
+    def update_gender(self, current: Gender):
+        self.gender_count[current.value] += 1
+    
+    @property
+    def gender(self) -> Gender:
+        return Gender(np.argmax(self.gender_count))
+    
+def is_entered(close: bool, state: State) -> bool:
+    return state.newborn and state.close > close
+
+def is_exited(close: bool, state: State) -> bool:
+    return state.close < close
+
+def is_passed(close: bool, state: State) -> bool:
+    return not state.newborn and state.close > close
+
+def check_action(close: bool, state: State) -> Action | None:
+    if is_entered(close, state):
+        return Action.Enter
+    if is_exited(close, state):
+        return Action.Exit
+    if is_passed(close, state):
+        return Action.Pass
+
+def parse_results(results: Results) -> list[People]:
+    """
+    Создаёт список объектов People на основе result
+
+    :param results: Результат обнаружения объектов
+    :type results: Results
+    :return: Список объектов People
+    :rtype: list[People]
+    """
+    boxes = results.boxes.cpu().numpy()
+    centers = boxes_center(boxes.xyxy)
+    people = list()
+    for box, center in zip(boxes, centers.astype(int)):
+        id = box.id and int(box.id)
+        gender = Gender(int(*box.cls))
+        people.append(People.from_position(id, gender, center))
+    return people
 
 class Tracking:
     def __init__(self, model: YOLO) -> None:
         self.model = model
-        self.id_location: dict[int, State] = dict()
-        self.predict_history = np.empty(10, dtype=Results)
+        self.history: dict[int, State] = dict()
         self.in_out = [0, 0]
         self.redis = Redis()
 
@@ -58,13 +91,12 @@ class Tracking:
         frame_step = 4
         stream = ParallelStream(rtsp_url)
         for frame in stream.iter_actual():
-            frame = crop_image(frame, **frame_crop)
-            frame = fill_black(frame)
+            frame = crop_image(frame)
 
             # Process the frame with your YOLO model
             results = self.model.track(frame, **model_args)[0]
             
-            persons = self.parse_results(results)
+            persons = parse_results(results)
             frame_time = stream.start_time + timedelta(milliseconds=stream.position)
             self.tracking(persons, frame_time)
 
@@ -88,109 +120,42 @@ class Tracking:
         if save_video:
             out.release()
         cv2.destroyAllWindows()
-
-    @staticmethod
-    def is_person_entered(close: bool, history: State | None) -> bool:
-        return history is None and close
-
-    @staticmethod
-    def is_person_exited(close: bool, history: State | None) -> bool:
-        return close and history is not None and not history.close
-
-    @staticmethod
-    def is_person_passed(close: bool, history: State | None) -> bool:
-        return not close and history is not None and history.close and not history.entering
-
-    def check_action(self, close: bool, history: State | None) -> Action | None:
-        if self.is_person_entered(close, history):
-            return Action.Entered
-        if self.is_person_exited(close, history):
-            return Action.Exited
-        if self.is_person_passed(close, history):
-            return Action.Passed
-
+    
     def tracking(self, persons: list[People], time: datetime):
         for person in persons:
-            if person.model_class in ("coach", "cleaner"):
+            result = self.track(person)
+            if result is None:
                 continue
-            close = person.is_close()
-            history = self.id_location.get(person.id_person, None)
-            action = self.check_action(close, history)
-            match action:
-                case Action.Entered:
-                    self.in_out[0] += 1
-                    self.redis.entered(Gender(person.model_class), time)
-                case Action.Exited:
-                    self.in_out[1] += 1
-                    self.redis.exited(Gender(person.model_class), time)
-                case Action.Passed:
-                    self.in_out[1] -= 1
-                    self.redis.passed(Gender(person.model_class), time)
-            if action is not None:
-                print(f"На данный момент Зашло: {self.in_out[0]} Вышло: {self.in_out[1]}")
-            if history is None:
-                self.id_location[person.id_person] = State(close, action is Action.Entered)
-            else:
-                self.id_location[person.id_person].update(close)
+            self.update_counters(*result, time)
 
-    def parse_results(self, results: Results) -> list[People]:
-        """
-        Создаёт список объектов People на основе result
-
-        :param results: Результат обнаружения объектов
-        :type results: Results
-        :return: Список объектов People
-        :rtype: list[People]
-        """
-        boxes = results.boxes.cpu().numpy()
-        centers = boxes_center(boxes.xyxy)
-        people = list()
-        for box, center in zip(boxes, centers.astype(int)):
-            id = int(box.id) if box.id is not None else None
-            people.append(People(id, results.names[int(*box.cls)], *box.conf, center))
-        return people
-
-    # region Пусть пока подумает над своим поведением
-    def _tracking2(self):
-        # TODO: Так будет работать логика будущего(наверное), сначала парсинг result,
-        #  потом парсинг массива каждым методом
-        # pass
-        frame_objects = np.empty(10, dtype=object)
-        for i, frame_result in enumerate(self.predict_history):
-            frame_objects[i] = self.parse_results(frame_result)
-
-        self._door_touch(frame_objects)
-
-        # self.people_coming(person)
-        # self._people_leave(frame_objects)
-
-    @staticmethod
-    def _door_touch(peoples_from_frame) -> None:
-        # TODO: Не работает, нужно разбираться почему
-        person_door_relationship = dict()
-        for frame_object in peoples_from_frame:
-            for person in frame_object:
-                person_id = person.get_person_id()
-                location_person = person.check_how_close_to_door()
-                if not person_door_relationship.get(person_id):
-                    person_door_relationship[person_id] = location_person
-                    continue
-                last_location = person_door_relationship[person_id]
-                if last_location == Location.Far and location_person == Location.Close:
-                    print(
-                        "Мама что произошло за за 7 фреймов")  # Смотрим случай когда за 7 кадров человек улетел куда-то
-                elif last_location == Location.Around and location_person == Location.Close:
-                    print("Человек вошёл в дверь")
-                    person.print_person()
-                elif last_location == Location.Close and location_person == Location.Around:
-                    print("Человек вышел из двери")
-                    person.print_person()
-                elif last_location == Location.Close and location_person == Location.Far:
-                    print("Мама что произошло за за 7 фреймов")
-                person_door_relationship[person_id] = location_person
-
-    # endregion
-
+    def track(self, person: People) -> tuple[Gender, Action]:
+        if person.id is None:
+            return
+        state = self.history.get(person.id, None)
+        if state is None:
+            self.history[person.id] = State(person.is_close, person.gender)
+            return
+        state.update_gender(person.gender)
+        if state.gender in IGNORE:
+            return
+        action = check_action(person.is_close, state)
+        state.update(person.is_close)
+        return state.gender, action
+    
+    def update_counters(self, gender: Gender, action: Action, time: datetime):
+        match action:
+            case Action.Enter:
+                self.in_out[0] += 1
+                self.redis.entered(gender, time)
+            case Action.Exit:
+                self.in_out[1] += 1
+                self.redis.exited(gender, time)
+            case Action.Pass:
+                self.in_out[1] -= 1
+                self.redis.passed(gender, time)
+            case _:
+                return
+        print(f"На данный момент Зашло: {self.in_out[0]} Вышло: {self.in_out[1]}")
 
 if __name__ == "__main__":
     pass
