@@ -4,12 +4,14 @@ from attr import frozen
 from Tracker.Doors import Doors
 from Tracker.misc import Distances, dist
 
+
 class Gender(Enum):
     Cleaner = 0
     Coach = 1
     Kid = 2
     Man = 3
     Woman = 4
+
 
 def is_close(position: tuple[int, int]) -> bool:
     """
@@ -24,6 +26,7 @@ def is_close(position: tuple[int, int]) -> bool:
         if dist(*door.center, *position) < float(Distances.Close):
             return True
     return False
+
 
 @frozen
 class People:

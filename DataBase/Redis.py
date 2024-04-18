@@ -1,6 +1,7 @@
 if __name__ == "__main__":
     import sys
     from os.path import dirname
+
     sys.path.append(dirname(__file__).rpartition('\\')[0])
 
 from datetime import datetime, timedelta
@@ -204,7 +205,7 @@ class Redis:
         # center = datetime_to_unix(datetime.now())
         spread = 5 * 3600 * 1000
 
-        for action, gender in product((Action.Enter, Action.Exit), 
+        for action, gender in product((Action.Enter, Action.Exit),
                                       (Gender.Kid, Gender.Man, Gender.Woman)):
             times = np.random.normal(center, spread, size=1000)
             times = np.unique(times)
