@@ -7,7 +7,7 @@ from Tracker.misc import Distances
 from Tracker.People import People
 
 
-def draw_debug(results: Results, people: list[People], 
+def draw_debug(results: Results, people: list[People],
                resize: tuple[float, float] = (0.75, 0.75),
                draw_boxes=True, draw_doors=True, draw_lines=True) -> MatLike:
     """
@@ -57,7 +57,8 @@ def draw_door(frame: MatLike, door: Door):
                 fontScale=1, color=(255, 255, 255),
                 thickness=2)
 
-def line_door_person(frame: MatLike, people: list[People],) -> None:
+
+def line_door_person(frame: MatLike, people: list[People], ) -> None:
     """
     Рисует линии от человека к 3м дверям, обращаясь к координатам из enum Doors
 

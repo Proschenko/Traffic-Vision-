@@ -2,17 +2,40 @@
 # Default YOLO tracker settings for BoT-SORT tracker https://github.com/NirAharon/BoT-SORT
 
 tracker_type: botsort  # tracker type, ['botsort', 'bytetrack']
+# track_high_thresh:
+Увеличение: Большее количество обнаруженных объектов будет сопоставлено с треками, что может увеличить количество ложных срабатываний трекера.
+Уменьшение: Меньше объектов будет сопоставлено с треками, что может привести к пропуску объектов или потере треков.
 track_high_thresh: 0.5  # threshold for the first association
-track_low_thresh: 0.1  # threshold for the second association
-new_track_thresh: 0.6  # threshold for init new track if the detection does not match any tracks
-track_buffer: 50  # buffer to calculate the time when to remove tracks
-match_thresh: 0.95  # threshold for matching tracks
+# track_low_thresh:
+Увеличение: Уменьшает шансы наложения треков друг на друга, что может снизить количество ошибочных сопоставлений.
+Уменьшение: Увеличивает шансы наложения треков друг на друга, что может привести к возрастанию ошибок в ассоциации объектов.
+track_low_thresh: 0.2  # threshold for the second association
+# new_track_thresh:
+Увеличение: Увеличит вероятность создания нового трека для обнаруженных объектов, что может снизить потерю объектов.
+Уменьшение: Уменьшит вероятность создания нового трека, что может привести к пропуску объектов или увеличению количества потерянных треков.
+new_track_thresh: 0.7  # threshold for init new track if the detection does not match any tracks
+# track_buffer:
+Увеличение: Увеличит время хранения треков в памяти, что может привести к увеличению общего количества треков и сохранению треков на дольший период времени.
+Уменьшение: Уменьшит время хранения треков в памяти, что может снизить общее количество треков и ускорить удаление устаревших треков.
+track_buffer: 30  # buffer to calculate the time when to remove tracks
+# match_thresh:
+Увеличение: Трекер будет более строгим при сопоставлении треков, что может уменьшить количество ложных срабатываний, но также может привести к увеличению количества пропусков.
+Уменьшение: Трекер будет менее строгим при сопоставлении треков, что может увеличить количество ложных срабатываний, но также может снизить количество пропусков.
+match_thresh: 0.8  # threshold for matching tracks
 # min_box_area: 10  # threshold for min box areas(for tracker evaluation, not used for now)
 # mot20: False  # for tracker evaluation(not used for now)
 
 # BoT-SORT settings
 gmc_method: sparseOptFlow  # method of global motion compensation
 # ReID model related thresh (not supported yet)
+# proximity_thresh:
+Увеличение: Увеличивает радиус поиска соседних треков для сопоставления, что может увеличить количество треков, сопоставленных по близости.
+Уменьшение: Уменьшает радиус поиска соседних треков для сопоставления, что может уменьшить количество треков, сопоставленных по близости.
 proximity_thresh: 0.5
+# appearance_thresh:
+# Этот параметр не используется в текущей реализации алгоритма.
 appearance_thresh: 0.25
-with_reid: False
+# with_reid:
+Увеличение: Если установлен в True, алгоритм повторной идентификации будет использоваться, что может улучшить качество сопоставления треков при наличии сложных сцен с перекрытиями или сменами видов.
+Уменьшение: Если установлен в False, алгоритм повторной идентификации не будет использоваться, что может ухудшить качество сопоставления треков, особенно в сложных сценах.
+with_reid: True
