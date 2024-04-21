@@ -13,7 +13,7 @@ class Gender(Enum):
     Woman = 4
 
 
-def is_close(position: tuple[int, int]) -> bool:
+def _is_close(position: tuple[int, int]) -> bool:
     """
     Проверяет находится ли позиция в какой-либо двери
 
@@ -24,6 +24,22 @@ def is_close(position: tuple[int, int]) -> bool:
     """
     for door in Doors:
         if dist(*door.center, *position) < float(Distances.Close):
+            return True
+    return False
+
+def is_close(position: tuple[int, int]) -> bool:
+    """
+    Проверяет находится ли позиция в какой-либо двери
+
+    :param position: Позиция для проверки
+    :type position: tuple[int, int]
+    :return: Находится в двери
+    :rtype: bool
+    """
+    x,y = position
+    for door in Doors:
+        x_min, y_min, x_max, y_max = door.corners
+        if (x_min < x < x_max) and (y_min < y < y_max):
             return True
     return False
 
