@@ -84,6 +84,7 @@ class Tracking:
         save_video = save_path is not None
         out = None
 
+        # TODO: конфиг должен читаться из отдельного файла
         model_args = {"iou": 0.4, "conf": 0.5, "persist": True,
                       "imgsz": 640, "verbose": False,
                       "tracker": "botsort.yaml"}
@@ -101,12 +102,13 @@ class Tracking:
             self.tracking(persons, frame_time)
 
             if save_video or show_video:
-                debug_frame = draw_debug(results, persons, draw_lines=False)
+                debug_frame = draw_debug(results, persons, draw_lines=False, 
+                                         in_out_count=self.in_out)
 
             if save_video:
                 if out is None:
                     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                    fps = stream.fps // frame_step
+                    fps = 25
                     frameSize = debug_frame.shape[-2::-1]
                     out = cv2.VideoWriter(save_path, fourcc, fps, frameSize)
                 out.write(debug_frame)
@@ -116,7 +118,6 @@ class Tracking:
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
 
-        stream.release()
         if save_video:
             out.release()
         cv2.destroyAllWindows()
