@@ -49,7 +49,8 @@ class People:
     id: int
     gender: Gender
     is_close: bool
+    position: tuple[int, int]
 
     @classmethod
     def from_position(cls, id: int, gender: Gender, position: tuple[int, int]):
-        return cls(id, gender, is_close(position))
+        return cls(id, gender, is_close(position), tuple(map(int, position)))
