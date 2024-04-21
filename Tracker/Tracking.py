@@ -13,11 +13,12 @@ from Tracker.StreamCatcher import ParallelStream
 
 IGNORE = Gender.Cleaner, Gender.Coach
 
+
 class State:
     def __init__(self, close: bool, gender: Gender):
         self.newborn = True
         self.close = close
-        self.gender_count = [0]*len(Gender)
+        self.gender_count = [0] * len(Gender)
         self.update_gender(gender)
 
     def update(self, close: bool):
@@ -26,19 +27,23 @@ class State:
 
     def update_gender(self, current: Gender):
         self.gender_count[current.value] += 1
-    
+
     @property
     def gender(self) -> Gender:
         return Gender(np.argmax(self.gender_count))
-    
+
+
 def is_entered(close: bool, state: State) -> bool:
     return state.newborn and state.close > close
+
 
 def is_exited(close: bool, state: State) -> bool:
     return state.close < close
 
+
 def is_passed(close: bool, state: State) -> bool:
     return not state.newborn and state.close > close
+
 
 def check_action(close: bool, state: State) -> Action | None:
     if is_entered(close, state):
@@ -47,6 +52,7 @@ def check_action(close: bool, state: State) -> Action | None:
         return Action.Exit
     if is_passed(close, state):
         return Action.Pass
+
 
 def parse_results(results: Results) -> list[People]:
     """
@@ -65,6 +71,7 @@ def parse_results(results: Results) -> list[People]:
         gender = Gender(int(*box.cls))
         people.append(People.from_position(id, gender, center))
     return people
+
 
 class Tracking:
     def __init__(self, model: YOLO) -> None:
@@ -88,7 +95,7 @@ class Tracking:
         model_args = {"iou": 0.4, "conf": 0.5, "persist": True,
                       "imgsz": 640, "verbose": False,
                       "tracker": "botsort.yaml"}
-        
+
         frame_step = 4
         stream = ParallelStream(rtsp_url)
         for frame in stream.iter_actual():
@@ -96,7 +103,7 @@ class Tracking:
 
             # Process the frame with your YOLO model
             results = self.model.track(frame, **model_args)[0]
-            
+
             persons = parse_results(results)
             frame_time = stream.start_time + timedelta(milliseconds=stream.position)
             self.tracking(persons, frame_time)
@@ -121,7 +128,7 @@ class Tracking:
         if save_video:
             out.release()
         cv2.destroyAllWindows()
-    
+
     def tracking(self, persons: list[People], time: datetime):
         for person in persons:
             result = self.track(person)
@@ -142,7 +149,7 @@ class Tracking:
         action = check_action(person.is_close, state)
         state.update(person.is_close)
         return state.gender, action
-    
+
     def update_counters(self, gender: Gender, action: Action, time: datetime):
         match action:
             case Action.Enter:
@@ -157,6 +164,7 @@ class Tracking:
             case _:
                 return
         print(f"На данный момент Зашло: {self.in_out[0]} Вышло: {self.in_out[1]}")
+
 
 if __name__ == "__main__":
     pass
