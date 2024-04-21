@@ -14,7 +14,7 @@ from tqdm import tqdm
 from ultralytics import YOLO
 
 from Tracker.Debug_drawer import draw_debug
-from Tracker.misc import crop_image, frame_crop, fill_black
+from Tracker.misc import crop_image
 from Tracker.People import People
 from Tracker.StreamCatcher import ParallelStream
 from Tracker.Tracking import Tracking
@@ -51,8 +51,7 @@ if __name__ == "__main__":
     saver = save()
     saver.send(None)
     for frame in tqdm(stream.iter_actual(), disable=False):
-        frame = crop_image(frame, **frame_crop)
-        frame = fill_black(frame)
+        frame = crop_image(frame)
         detected = model.track(frame, **model_args)[0]
         persons = Tracking.parse_results(Oleg, detected)
 
