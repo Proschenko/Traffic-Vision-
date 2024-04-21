@@ -3,13 +3,14 @@ from cv2.typing import MatLike
 from ultralytics.engine.results import Results
 
 from Tracker.Doors import Door, Doors
-from Tracker.misc import Distances
 from Tracker.People import People
 
 
 def draw_debug(results: Results, people: list[People],
                resize: tuple[float, float] = (0.75, 0.75),
-               draw_boxes=True, draw_doors=True, draw_lines=True) -> MatLike:
+               draw_boxes=True, draw_doors=True, 
+               draw_lines=True, draw_points=True,
+               in_out_count: tuple[int, int]=None) -> MatLike:
     """
     Рисует дебаг информицию
 
@@ -34,8 +35,18 @@ def draw_debug(results: Results, people: list[People],
     if draw_doors:
         for door in Doors:
             draw_door(frame, door)
+    if draw_points:
+        draw_people_points(frame, people)
+    if in_out_count != None:
+        draw_count(frame, in_out_count)
     return cv2.resize(frame, (0, 0), None, *resize)
 
+def draw_count(frame: MatLike, in_out_count: tuple[int, int]):
+    text = "/".join(map(str, in_out_count))
+    cv2.putText(frame, text, (8, frame.shape[0]-16),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                fontScale=1, color=(255, 255, 255),
+                thickness=2)
 
 def draw_door(frame: MatLike, door: Door):
     """
@@ -51,12 +62,15 @@ def draw_door(frame: MatLike, door: Door):
     pt1 = door.corners[:2]
     pt2 = door.corners[2:]
     cv2.rectangle(frame, pt1, pt2, color=(255, 255, 255))
-    cv2.circle(frame, (x, y), radius=Distances.Close, color=(0, 0, 255))
     cv2.putText(frame, door.name[0], org=(x - r, y - r * 2),
                 fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                 fontScale=1, color=(255, 255, 255),
                 thickness=2)
 
+def draw_people_points(frame: MatLike, people: list[People]):
+    for person in people:
+        cv2.circle(frame, person.position, radius=10, 
+                   color=(255, 0, 0), thickness=-1)
 
 def line_door_person(frame: MatLike, people: list[People], ) -> None:
     """
