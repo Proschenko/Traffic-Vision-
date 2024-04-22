@@ -19,8 +19,8 @@ class Action(Enum):
 class Distances(IntEnum):
     """
     Расстояние до двери:
-    Close   : близко
-    Around  : около
+    Close: близко
+    Around: около
     """
     Close = 54
     Around = 100
