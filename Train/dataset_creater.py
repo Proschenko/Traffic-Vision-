@@ -22,7 +22,7 @@ from Tracker.Tracking import Tracking
 
 def save() -> Generator[None, tuple[MatLike, list[People]], None]:
     directory = ("D:/я у мамы программист/3 курс 2 семестр IT-проекты/"
-                "Traffic-Vision-/self development images/")
+                 "Traffic-Vision-/self development images/")
     for i in count():
         image, persons = yield
         name = f"frame_{i:08}"
@@ -34,8 +34,8 @@ def save() -> Generator[None, tuple[MatLike, list[People]], None]:
 if __name__ == "__main__":
     freeze_support()
     model_args = {"iou": 0, "conf": 0.6, "classes":(1, 2, 3),
-                "imgsz": 640, "verbose": False}
-    model = YOLO('runs/detect/train2/weights/best.pt')
+                  "imgsz": 640, "verbose": False}
+    model = YOLO('runs/detect/train8/weights/best.pt')
     Oleg = "Pepeg"
     # tracker = Tracking(model)
 

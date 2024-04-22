@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from typing import Tuple
 
 import cv2
 import numpy as np
@@ -136,7 +137,7 @@ class Tracking:
                 continue
             self.update_counters(*result, time)
 
-    def track(self, person: People) -> tuple[Gender, Action]:
+    def track(self, person: People) -> tuple[Gender, Action | None] | None:
         if person.id is None:
             return
         state = self.history.get(person.id, None)
