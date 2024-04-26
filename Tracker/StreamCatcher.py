@@ -1,100 +1,68 @@
-import multiprocessing as mp
-from datetime import datetime, timedelta
-from functools import cached_property
-from itertools import count
-from multiprocessing import Queue
+from datetime import datetime
+from multiprocessing import Process, Queue
 from queue import Empty
-from typing import Generator
+from time import sleep
 
 import cv2
-from cv2.typing import MatLike
 
 
 class StreamException(Exception):
     """Exception from Stream"""
 
-
-class Stream:
-    def __init__(self, rtsp_url: str) -> None:
-        self.cap = cv2.VideoCapture(rtsp_url)
-        if not self.cap.isOpened():
-            StreamException(f"Cant open file {rtsp_url = }")
-
-        self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 25 * 8)
-        self.start_time = datetime.now() - timedelta(milliseconds=self.position)
-
-    @property
-    def position(self) -> int:
-        return int(self.cap.get(cv2.CAP_PROP_POS_MSEC))
-
-    @property
-    def frame_number(self) -> int:
-        return int(self.cap.get(cv2.CAP_PROP_POS_FRAMES))
-
-    @cached_property
-    def fps(self) -> int:
-        return int(self.cap.get(cv2.CAP_PROP_FPS))
-
-    @cached_property
-    def n_frames(self) -> int:
-        return int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
-    def jump_to(self, second: int):
-        frame = self.fps * second
-        self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame)
-
-    def iter_frames(self, step: int) -> Generator[MatLike, None, None]:
-        for frame_number in count():
-            if not self.cap.isOpened():
-                break
-
-            ret, frame = self.cap.read()
-            if not ret:
-                break
-
-            if frame_number % step == 0:
-                yield frame
-
-    def release(self):
-        self.cap.release()
-
-class ParallelStream:
-    def __init__(self, rtsp_url: str) -> None:
-        self.rtsp_url = rtsp_url
-        self.data = Queue(maxsize=1)
-        self.position = 0
+class VideoCapture(cv2.VideoCapture):
+    def __enter__(self):
+        return self
     
-    def iter_actual(self) -> Generator[tuple[MatLike, int], None, None]:
+    def __exit__(self, *_):
+        self.release()
+
+class Stream(Process):
+    def __init__(self, url: str, parallel: bool=True):
+        self.url = url
+        self.parallel = parallel
+        self.frame = Queue(maxsize=1)
+        super().__init__(target=self.catch_frames)
+    
+    def __enter__(self):
         self.start_time = datetime.now()
-        while True:
-            self.process = mp.Process(target=self.catch_frames, 
-                                  args=[self.rtsp_url, self.data])
-            self.process.start()
-            try: 
-                while True:
-                    pos, frame = self.data.get(timeout=10)
-                    self.position = pos
-                    yield frame
-            except Empty:
-                print(StreamException("Connection time out"))
-            finally:
-                self.process.terminate()
-
-    @staticmethod
-    def catch_frames(rtsp_url: str, output: Queue):
-        cap = cv2.VideoCapture(rtsp_url)
-        if not cap.isOpened():
-            StreamException(f"Cant open file {rtsp_url = }")
-        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
-            position = int(cap.get(cv2.CAP_PROP_POS_MSEC))
+        self.start()
+        return self
+    
+    def __exit__(self, *_):
+        self.terminate()
+    
+    def __iter__(self):
+        while self.is_alive():
             try:
-                output.get_nowait()
+                yield self.frame.get(timeout=0.1)
             except Empty:
                 pass
-            output.put((position, frame), timeout=1)
-        cap.release()
+    
+    def catch_frames(self):
+        with VideoCapture(self.url) as cap:
+            if not cap.isOpened():
+                raise StreamException(f"Cant open file {self.url = }")
+
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    raise StreamException(f"Cant read frame")
+                position = int(cap.get(cv2.CAP_PROP_POS_MSEC))
+                if self.parallel:
+                    try:
+                        self.frame.get_nowait()
+                    except Empty:
+                        pass
+                self.frame.put((position, frame))
+            cap.release()
+            raise StreamException(f"Stream ended succsesfully")
+
+if __name__ == '__main__':
+    url = 'rtsp://rtsp:EL3gS7XV@80.91.19.85:58002/Streaming/Channels/102'
+
+    with Stream(url) as stream:
+        for pos, frame in stream:
+            cv2.imshow("frame", frame)
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
+            sleep(1/10)

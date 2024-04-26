@@ -10,7 +10,7 @@ from DataBase.Redis import Redis
 from Tracker.Debug_drawer import draw_debug
 from Tracker.misc import Action, boxes_center, crop_image
 from Tracker.People import Gender, People
-from Tracker.StreamCatcher import ParallelStream
+from Tracker.StreamCatcher import Stream
 
 IGNORE = Gender.Cleaner, Gender.Coach
 
@@ -81,7 +81,7 @@ class Tracking:
         self.in_out = [0, 0]
         self.redis = Redis()
 
-    def process_video_with_tracking(self, rtsp_url: str, show_video=True, save_path=None):
+    def process_video_with_tracking(self, video: Stream, show_video=True, save_path=None):
         """
         TODO: документация
         :param rtsp_url:
@@ -97,16 +97,14 @@ class Tracking:
                       "imgsz": 640, "verbose": False,
                       "tracker": "botsort.yaml"}
 
-        frame_step = 4
-        stream = ParallelStream(rtsp_url)
-        for frame in stream.iter_actual():
+        for pos, frame in video:
             frame = crop_image(frame)
 
             # Process the frame with your YOLO model
             results = self.model.track(frame, **model_args)[0]
 
             persons = parse_results(results)
-            frame_time = stream.start_time + timedelta(milliseconds=stream.position)
+            frame_time = video.start_time + timedelta(milliseconds=pos)
             self.tracking(persons, frame_time)
 
             if save_video or show_video:
