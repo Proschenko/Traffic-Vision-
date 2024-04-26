@@ -1,63 +1,58 @@
-from datetime import timedelta
-
 if __name__ == "__main__":
     import sys
     from os.path import dirname
 
     sys.path.append(dirname(__file__).rpartition('\\')[0])
 
-import os
+
+from datetime import datetime, timedelta
+from itertools import count
+from os import makedirs, path
+
 import cv2
-import time
 from ultralytics import YOLO
-from Tracker.misc import crop_image
-from Tracker.StreamCatcher import ParallelStream
-from Tracker.Tracking import Tracking, parse_results
 
+from Tracker.Debug_drawer import draw_debug
+from Tracker.People import Gender
+from Tracker.StreamCatcher import Stream
+from Tracker.Tracking import detect, parse_results
 
-def process_video_with_tracking_and_save_predict_images(rtsp_url: str, show_video=True, save_path_images=None):
-    """
-    TODO: документация
-    :param rtsp_url:
-    :param show_video:
-    :param save_path_images:
-    :return:
-    """
+IGNORE = Gender.Man, Gender.Woman
 
-    # TODO: конфиг должен читаться из отдельного файла
-    model_args = {"iou": 0.4, "conf": 0.5, "persist": True,
-                  "imgsz": 640, "verbose": False,
-                  "tracker": "botsort.yaml"}
+def is_good(persons) -> bool:
+    return persons and (len(persons) > 1 or persons[0].gender not in IGNORE)
+
+def main(step: timedelta, save_path: str, show_video=True):
+    url = 'rtsp://rtsp:EL3gS7XV@80.91.19.85:58002/Streaming/Channels/101'
+
     model = YOLO('runs/detect/train8/weights/best.pt')
+    model.fuse()
 
-    stream = ParallelStream(rtsp_url)
-    last_save_time = time.time()
-    for frame in stream.iter_actual():
-        frame = crop_image(frame)
+    for i in count(1):
+        folder = path.join(save_path, f"pack_{i}")
+        if path.exists(folder):
+            continue
+        makedirs(folder)
+        break
 
-        # Process the frame with your YOLO model
-        results = model.track(frame, **model_args)[0]
+    last_save = datetime.fromtimestamp(0)
+    index = 0
+    with Stream(url) as stream:
+        for time, result in detect(model, stream):
+            persons = parse_results(result)
+            if show_video:
+                debug_frame = draw_debug(result, persons, draw_lines=False)
+                cv2.imshow("frame", debug_frame)
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                    break
 
-        persons = parse_results(results)
-        frame_time = stream.start_time + timedelta(milliseconds=stream.position)
-
-        if show_video:
-            if save_path_images and persons:  # Если указан путь для сохранения и найдены люди на кадре
-                current_time = time.time()
-                if current_time - last_save_time >= 5:  # Проверяем, прошло ли уже 5 секунд с последнего сохранения
-                    if not os.path.exists(save_path_images):
-                        os.makedirs(save_path_images)
-                    cv2.imwrite(os.path.join(save_path_images, f"{frame_time}.jpg"), frame)
-                    last_save_time = current_time  # Обновляем время последнего сохранения
-
-        if show_video:
-            cv2.imshow("frame", frame)
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                break
-
-    cv2.destroyAllWindows()
+            if time - last_save > step:
+                if is_good(persons):
+                    name = path.join(folder, f"{index:0>10}.jpg")
+                    index += 1
+                    cv2.imwrite(name, result.orig_img)
+                    last_save = time
 
 
 if __name__ == "__main__":
-    input_video = 'rtsp://rtsp:EL3gS7XV@80.91.19.85:58002/Streaming/Channels/101'
-    process_video_with_tracking_and_save_predict_images(input_video)
+    main(timedelta(seconds=3), ".")

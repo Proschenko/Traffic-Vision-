@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Tuple
+from typing import Generator
 
 import cv2
 import numpy as np
@@ -74,6 +74,18 @@ def parse_results(results: Results) -> list[People]:
     return people
 
 
+def detect(model: YOLO, video: Stream) -> Generator[tuple[datetime, Results], None, None]:
+    model_args = {"iou": 0.4, "conf": 0.5, "persist": True,
+                  "imgsz": 640, "verbose": False,
+                  "tracker": "botsort.yaml"}
+    for pos, frame in video:
+        time = video.start_time + timedelta(milliseconds=pos)
+
+        frame = crop_image(frame)
+        results = model.track(frame, **model_args)[0]
+        yield time, results
+
+
 class Tracking:
     def __init__(self, model: YOLO) -> None:
         self.model = model
@@ -92,23 +104,12 @@ class Tracking:
         save_video = save_path is not None
         out = None
 
-        # TODO: конфиг должен читаться из отдельного файла
-        model_args = {"iou": 0.4, "conf": 0.5, "persist": True,
-                      "imgsz": 640, "verbose": False,
-                      "tracker": "botsort.yaml"}
-
-        for pos, frame in video:
-            frame = crop_image(frame)
-
-            # Process the frame with your YOLO model
-            results = self.model.track(frame, **model_args)[0]
-
-            persons = parse_results(results)
-            frame_time = video.start_time + timedelta(milliseconds=pos)
-            self.tracking(persons, frame_time)
+        for time, result in detect(self.model, video):
+            persons = parse_results(result)
+            self.tracking(persons, time)
 
             if save_video or show_video:
-                debug_frame = draw_debug(results, persons, draw_lines=False, 
+                debug_frame = draw_debug(result, persons, draw_lines=False, 
                                          in_out_count=self.in_out)
 
             if save_video:
