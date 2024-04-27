@@ -6,7 +6,7 @@ from numpy import ndarray, dtype
 
 from Tracker.misc import boxes_center
 
-corners_path = "doors_corners.txt"
+corners_path = r"D:\PyCharm Com\Project\Traffic-Vision-\doors_corners.txt"
 door_names = ("women", "men", "kid")
 
 
