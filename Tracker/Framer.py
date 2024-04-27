@@ -4,12 +4,13 @@ if __name__ == "__main__":
 
     sys.path.append(dirname(__file__).rpartition('\\')[0])
 
-from itertools import count
-from time import sleep
-import cv2
-from cv2.typing import MatLike
-import numpy as np
+from typing import Generator
 
+import cv2
+import numpy as np
+from cv2.typing import MatLike
+
+from Tracker.misc import Frame
 from Tracker.StreamCatcher import Stream
 
 WIDTH = 640
@@ -17,32 +18,36 @@ HEIGHT1 = 300
 HEIGHT2 = 150
 START1 = 0
 START2 = 900
+BORDER = 20
 
+class Framer:
+    def __init__(self, url1: str, url2: str) -> None:
+        self.left, self.right = Stream(url1), Stream(url2)
 
-# HEIGHT = 300
-# WIDTH_2_MIN = 900
-# WIDTH_2_MAX = 1540
-# HEIGHT2 = 150
+    def __iter__(self):
+        with self.left, self.right:
+            yield from self.get_frames()
 
+    def get_frames(self) -> Generator[Frame, None, None]:
+        for (p1, frame1), (p2, frame2) in zip(self.left, self.right):
+            yield Frame(p2, self.make_frame(frame1, frame2))
 
-def make_frame(left: Stream, right: Stream):
-    for (p1, frame1), (p2, frame2) in zip(left, right):
+    def make_frame(self, frame1: MatLike, frame2: MatLike) -> MatLike:
         # Создаем черное изображение нужного размера
         image = np.zeros((WIDTH, WIDTH, 3), dtype=np.uint8)
 
         # Размещаем первую часть изображения
         image[:HEIGHT1] = frame1[START1:][:HEIGHT1, :WIDTH]
 
-        # Размещаем вторую часть изображения с отступом в 20 пикселей
-        image[HEIGHT1+20:][:HEIGHT2] = frame2[:, START2:][:HEIGHT2, :WIDTH]
+        # Размещаем вторую часть изображения с отступом
+        image[HEIGHT1+BORDER:][:HEIGHT2] = frame2[:, START2:][:HEIGHT2, :WIDTH]
 
-        yield (p1, p2), image
+        return image
 
 if __name__ == "__main__":
     url = 'rtsp://rtsp:EL3gS7XV@80.91.19.85:58002/Streaming/Channels/101'
-
-    with Stream(url) as left, Stream(url) as right:
-        for pos, frame in make_frame(left, right):
-            cv2.imshow("frame", frame)
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                break
+    
+    for pos, frame in Framer(url, url):
+        cv2.imshow("frame", frame)
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            break

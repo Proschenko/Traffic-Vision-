@@ -2,7 +2,6 @@ from enum import Enum
 from attr import frozen
 
 from Tracker.Doors import Doors
-from Tracker.misc import Distances, dist
 
 
 class Gender(Enum):
@@ -12,20 +11,6 @@ class Gender(Enum):
     Man = 3
     Woman = 4
 
-
-def _is_close(position: tuple[int, int]) -> bool:
-    """
-    Проверяет находится ли позиция в какой-либо двери
-
-    :param position: Позиция для проверки
-    :type position: tuple[int, int]
-    :return: Находится в двери
-    :rtype: bool
-    """
-    for door in Doors:
-        if dist(*door.center, *position) < float(Distances.Close):
-            return True
-    return False
 
 def is_close(position: tuple[int, int]) -> bool:
     """
