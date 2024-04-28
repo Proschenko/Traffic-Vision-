@@ -6,7 +6,7 @@ if __name__ == "__main__":
 
 from timer_cm import Timer
 
-from Config.Context import Master as config
+from Shared.Context import Master as config
 from Tracker.Detector import Detector
 from Tracker.Drawer import Drawer
 from Tracker.Framer import Framer
@@ -48,5 +48,5 @@ class Master:
                 saver.write(debug_frame)
 
 if __name__ == "__main__":
-    from Config.Context import url
+    from Shared.Context import url
     Master([url, url]).run()

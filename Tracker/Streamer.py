@@ -11,7 +11,7 @@ from typing import Generator
 
 import cv2
 
-from Tracker.misc import Frame
+from Shared.Classes import Frame
 
 
 class StreamException(Exception):
@@ -67,7 +67,7 @@ class Stream(Process):
             raise StreamException(f"Stream ended succsesfully")
 
 if __name__ == '__main__':
-    from Config.Context import url_small as url
+    from Shared.Context import url_small as url
 
     with Stream(url) as stream:
         for pos, frame in stream:

@@ -10,9 +10,9 @@ import cv2
 import numpy as np
 from cv2.typing import MatLike
 
-from Config.Context import Framer as config
-from Tracker.misc import Frame
-from Tracker.StreamCatcher import Stream
+from Shared.Classes import Frame
+from Shared.Context import Framer as config
+from Tracker.Streamer import Stream
 
 SIZE = config.size
 HEIGHT1 = config.height1

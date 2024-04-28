@@ -3,8 +3,8 @@ from datetime import datetime
 import numpy as np
 
 from DataBase.Redis import Redis
-from Tracker.misc import Action
-from Tracker.People import Gender, People
+from Shared.Classes import Action, Gender, People
+from Shared.Context import doors
 
 IGNORE = Gender.Cleaner, Gender.Coach
 
@@ -64,15 +64,16 @@ class Traker:
     def oleg(self, person: People) -> tuple[Gender, Action | None] | None:
         if person.id is None:
             return
+        close = person.is_close(doors)
         state = self.history.get(person.id, None)
         if state is None:
-            self.history[person.id] = State(person.is_close, person.gender)
+            self.history[person.id] = State(close, person.gender)
             return
         state.update_gender(person.gender)
         if state.gender in IGNORE:
             return
-        action = check_action(person.is_close, state)
-        state.update(person.is_close)
+        action = check_action(close, state)
+        state.update(close)
         return state.gender, action
 
     def update_counters(self, gender: Gender, action: Action, time: datetime):

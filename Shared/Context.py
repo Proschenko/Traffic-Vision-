@@ -1,5 +1,7 @@
 from typing import Any, Type
 
+from Shared.Classes import Door, Gender
+
 
 def asdict(cls: Type) -> dict[str, Any]:
     return {k: v for k, v in cls.__dict__.items() if not k.startswith("_")}
@@ -16,15 +18,11 @@ class Detector:
     model_path = "runs/detect/train8/weights/best.pt"
     args = asdict(DetectorArgs)
 
-class Doors:
-    names = ("women", "men", "kid")
-    path = "doors_corners.txt"
-
 class Drawer:
-    resize = False
+    resize = (1, 1)
     boxes = True
     doors = True
-    lines = False
+    lines = True
     points = True
 
 class Framer:
@@ -46,6 +44,15 @@ class RedisArgs:
 class Redis:
     args = asdict(RedisArgs)
 
+class Tracker:
+    ignore = Gender.Cleaner, Gender.Coach
+
 
 url = 'rtsp://rtsp:EL3gS7XV@80.91.19.85:58002/Streaming/Channels/101'
 url_small = 'rtsp://rtsp:EL3gS7XV@80.91.19.85:58002/Streaming/Channels/102'
+
+doors = [
+    Door("kid", (175, 67, 283, 275)),
+    Door("men", (283, 38, 388, 244)),
+    Door("women", (255, 323, 300, 433)),
+]

@@ -14,9 +14,8 @@ import numpy as np
 import pandas as pd
 import redis
 
-from Config.Context import Redis as config
-from Tracker.misc import Action
-from Tracker.People import Gender
+from Shared.Classes import Action, Gender
+from Shared.Context import Redis as config
 
 
 class RedisError(Exception):

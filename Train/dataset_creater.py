@@ -14,7 +14,7 @@ import cv2
 from Tracker.Detector import Detector
 from Tracker.Drawer import Drawer
 from Tracker.Framer import Framer
-from Tracker.People import Gender
+from Shared.Classes import Gender
 
 IGNORE = Gender.Man, Gender.Woman
 

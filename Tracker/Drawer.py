@@ -4,9 +4,9 @@ import cv2
 from cv2.typing import MatLike
 from ultralytics.engine.results import Results
 
-from Config.Context import Drawer as config
-from Tracker.Doors import Door, Doors
-from Tracker.People import People
+from Shared.Classes import People
+from Shared.Context import Drawer as config
+from Shared.Context import doors
 
 
 class Drawer:
@@ -32,13 +32,13 @@ class Drawer:
         return frame
     
     def draw_lines(self, frame: MatLike, people: list[People]):
-        for person, door in product(people, Doors.centers):
-            cv2.line(frame, person.position, door,
+        for person, door in product(people, doors):
+            cv2.line(frame, person.position, door.center(),
                     color=(102, 255, 51), thickness=5)
     
     def draw_doors(self, frame: MatLike):
-        for door in Doors:
-            x, y = door.center
+        for door in doors:
+            x, y = door.center()
             r = 10
             pt1 = door.corners[:2]
             pt2 = door.corners[2:]
