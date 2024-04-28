@@ -1,13 +1,14 @@
 from dataclasses import dataclass, field
-from typing import Generator, Any
+from typing import Any, Generator
 
 import numpy as np
-from numpy import ndarray, dtype
+from numpy import dtype, ndarray
 
+from Config.Context import Doors as config
 from Tracker.misc import boxes_center
 
-corners_path = "doors_corners.txt"
-door_names = ("women", "men", "kid")
+corners_path = config.path
+door_names = config.names
 
 
 @dataclass(slots=True)

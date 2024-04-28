@@ -1,20 +1,15 @@
 from itertools import product
+
 import cv2
 from cv2.typing import MatLike
 from ultralytics.engine.results import Results
 
+from Config.Context import Drawer as config
 from Tracker.Doors import Door, Doors
 from Tracker.People import People
 
 
 class Drawer:
-    def __init__(self) -> None:
-        self.resize = (.75, .75)
-        self.boxes = True
-        self.doors = True
-        self.lines = True
-        self.points = True
-        
     def show(self, image: MatLike) -> bool:
         cv2.imshow("frame", image)
         return cv2.waitKey(1) & 0xFF == ord("q")
@@ -22,18 +17,18 @@ class Drawer:
     def debug(self, results: Results, persons: list[People], 
               count: tuple[int, int]=None):
         frame = results.orig_img
-        if self.boxes:
+        if config.boxes:
             frame = results.plot()
-        if self.lines:
+        if config.lines:
             self.draw_lines(frame, persons)
-        if self.doors:
+        if config.doors:
             self.draw_doors(frame)
-        if self.points:
+        if config.points:
             self.draw_points(frame, persons)
         if count != None:
             self.draw_count(frame, count)
-        if self.resize:
-            frame = cv2.resize(frame, (0, 0), None, *self.resize)
+        if config.resize:
+            frame = cv2.resize(frame, (0, 0), None, *config.resize)
         return frame
     
     def draw_lines(self, frame: MatLike, people: list[People]):

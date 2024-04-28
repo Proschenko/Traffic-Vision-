@@ -10,15 +10,16 @@ import cv2
 import numpy as np
 from cv2.typing import MatLike
 
+from Config.Context import Framer as config
 from Tracker.misc import Frame
 from Tracker.StreamCatcher import Stream
 
-WIDTH = 640
-HEIGHT1 = 300
-HEIGHT2 = 150
-START1 = 0
-START2 = 900
-BORDER = 20
+SIZE = config.size
+HEIGHT1 = config.height1
+HEIGHT2 = config.height2
+START2 = config.start2
+BORDER = config.border
+
 
 class Framer:
     def __init__(self, url1: str, url2: str) -> None:
@@ -34,13 +35,13 @@ class Framer:
 
     def make_frame(self, frame1: MatLike, frame2: MatLike) -> MatLike:
         # Создаем черное изображение нужного размера
-        image = np.zeros((WIDTH, WIDTH, 3), dtype=np.uint8)
+        image = np.zeros((SIZE, SIZE, 3), dtype=np.uint8)
 
         # Размещаем первую часть изображения
-        image[:HEIGHT1] = frame1[START1:][:HEIGHT1, :WIDTH]
+        image[:HEIGHT1] = frame1[:HEIGHT1, :SIZE]
 
         # Размещаем вторую часть изображения с отступом
-        image[HEIGHT1+BORDER:][:HEIGHT2] = frame2[:, START2:][:HEIGHT2, :WIDTH]
+        image[HEIGHT1+BORDER:][:HEIGHT2] = frame2[:, START2:][:HEIGHT2, :SIZE]
 
         return image
 

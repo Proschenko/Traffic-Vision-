@@ -1,3 +1,9 @@
+if __name__ == "__main__":
+    import sys
+    from os.path import dirname
+
+    sys.path.append(dirname(__file__).rpartition('\\')[0])
+
 from datetime import datetime, timedelta
 from multiprocessing import Process, Queue
 from queue import Empty
@@ -61,7 +67,7 @@ class Stream(Process):
             raise StreamException(f"Stream ended succsesfully")
 
 if __name__ == '__main__':
-    url = 'rtsp://rtsp:EL3gS7XV@80.91.19.85:58002/Streaming/Channels/101'
+    from Config.Context import url_small as url
 
     with Stream(url) as stream:
         for pos, frame in stream:
