@@ -11,7 +11,7 @@ from Tracker.Detector import Detector
 from Tracker.Drawer import Drawer
 from Tracker.Framer import Framer
 from Tracker.Saver import VideoSaver
-from Tracker.Traker import Traker
+from Tracker.Counter import Counter
 
 
 class Master:
@@ -22,7 +22,7 @@ class Master:
             with timer.child("Detector"):
                 self.detector = Detector()
             with timer.child("Traker"):
-                self.tracker = Traker()
+                self.tracker = Counter()
             with timer.child("Drawer"):
                 self.drawer = Drawer()
     
