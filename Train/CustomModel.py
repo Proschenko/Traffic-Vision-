@@ -14,10 +14,11 @@ np.random.seed(42)
 
 
 class CustomYOLOv8Model:
-    def __init__(self, dataset_version):
+    def __init__(self, dataset_version, project_version):
+        self.project_version = project_version
         self.dataset_version = dataset_version
         self.rf = Roboflow(api_key="rBzIu5I6ccC0pMQqHBlF")
-        self.dataset_name = "traffic-control-№3"
+        self.dataset_name = f"traffic-control-№{project_version}"
 
     # region чтение датасета
     @staticmethod
@@ -48,7 +49,7 @@ class CustomYOLOv8Model:
         :return: путь к датасету
         :rtype: str
         """
-        project = self.rf.workspace("traffic-vision-workspace-kb8fc").project("traffic-control-3")
+        project = self.rf.workspace("traffic-vision-workspace-kb8fc").project(f"traffic-control-{self.project_version}")
         version = project.version(self.dataset_version)
         dataset = version.download("yolov8")
         return dataset.location

@@ -30,7 +30,7 @@ def process_video_with_tracking_and_save_predict_images(rtsp_url: str, show_vide
     model_args = {"iou": 0.4, "conf": 0.5, "persist": True,
                   "imgsz": 640, "verbose": False,
                   "tracker": "botsort.yaml"}
-    model = YOLO(r'D:\PyCharm Com\Project\Traffic-Vision-\runs/detect/train8/weights/best.pt')
+    model = YOLO(r'D:\PyCharm Com\Project\Traffic-Vision-\runs/detect/train9/weights/best.pt')
 
     miss_frame = 30  # Берем каждый N кадр
     border_max_frame = 1000  # Ограничение по кадрам в папке

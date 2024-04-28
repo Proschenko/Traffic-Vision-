@@ -32,7 +32,7 @@ def delete_files_in_folder(folder_path):
 # region Этот код используется для формирования датасета для самообучения модели
 # my_best_model = (r"D:\я у мамы программист\3 курс 2 семестр IT-проекты\Traffic-Vision-"
 #                  r"\runs\detect\train8\weights\best.pt")  # Загружаем модель
-my_best_model = r"D:\PyCharm Com\Project\Traffic-Vision-\runs\detect\train8\weights\best.pt"  # Загружаем модель
+my_best_model = r"D:\PyCharm Com\Project\Traffic-Vision-\runs\detect\train9\weights\best.pt"  # Загружаем модель
 
 model = YOLO(my_best_model)
 # Отсюда берем кадры
