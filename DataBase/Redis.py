@@ -14,8 +14,8 @@ import numpy as np
 import pandas as pd
 import redis
 
-from Tracker.misc import Action
-from Tracker.People import Gender
+from Shared.Classes import Action, Gender
+from Shared.Context import Redis as config
 
 
 class RedisError(Exception):
@@ -77,7 +77,7 @@ def unix_to_datetime(time: int) -> datetime:
 
 class Redis:
     def __init__(self) -> None:
-        self.redis = redis.Redis(host='localhost', port=6379, decode_responses=True)
+        self.redis = redis.Redis(**config.args)
         try:
             self.redis.ping()
         except redis.exceptions.ConnectionError:

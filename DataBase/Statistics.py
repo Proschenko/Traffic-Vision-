@@ -8,7 +8,8 @@ from datetime import datetime
 
 import matplotlib.pyplot as plt
 
-from DataBase.Redis import Gender, Redis, unix_to_datetime, Action, Filter
+from DataBase.Redis import Action, Filter, Redis, unix_to_datetime
+from Shared.Classes import Gender
 
 
 def get_data(start_date: datetime, end_date: datetime, gender: Gender = None, column="enter") -> list:
