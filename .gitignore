@@ -7,8 +7,11 @@ venv/
 /Traffic-Control-project-3/
 /Test input video/
 /self development images/
-/self development dataset/
 
 /.env
 /Test output video/
 *.mp4
+/Traffic-Control-№2-1/
+/Traffic-Control-№3-1/
+/self development dataset/
+/Traffic-Control-№4-1/

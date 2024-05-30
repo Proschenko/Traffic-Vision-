@@ -1,15 +1,12 @@
 if __name__ == "__main__":
     import sys
     from os.path import dirname
-    sys.path.append(dirname(__file__).rpartition('\\')[0])
-	
-import os
 
+    sys.path.append(dirname(__file__).rpartition('\\')[0])
+import os
 import cv2
 from tqdm import tqdm
 from ultralytics import YOLO
-
-from Tracker.misc import crop_image, frame_crop
 
 
 def delete_files_in_folder(folder_path):
@@ -32,23 +29,29 @@ def delete_files_in_folder(folder_path):
                 print(f"Error deleting file: {file_path} -- {e}")
 
 
-# region Этот код используется для самообучения модели
-my_best_model = "runs/detect/train/weights/best.pt"  # Загружаем модель
+# region Этот код используется для формирования датасета для самообучения модели
+# my_best_model = (r"D:\я у мамы программист\3 курс 2 семестр IT-проекты\Traffic-Vision-"
+#                  r"\runs\detect\train8\weights\best.pt")  # Загружаем модель
+my_best_model = r"D:\PyCharm Com\Project\Traffic-Vision-\runs\detect\train9\weights\best.pt"  # Загружаем модель
+
 model = YOLO(my_best_model)
 # Отсюда берем кадры
-directory = r"D:\я у мамы программист\3 курс 2 семестр IT-проекты\Traffic-Vision-\self development images"
-train_images_path = 'self development dataset/train/images'  # Сюда складываем
+# directory = r"D:\я у мамы программист\3 курс 2 семестр IT-проекты\Traffic-Vision-\self development images"
+directory = r"D:\PyCharm Com\Project\Traffic-Vision-\self development images"
+
+# Сюда складываем
+# train_images_path = r"D:\я у мамы программист\3 курс 2 семестр IT-проекты\Traffic-Vision-\self development dataset"
+train_images_path = r"D:\PyCharm Com\Project\Traffic-Vision-\self development dataset"  # Сюда складываем
 img_list = os.listdir(directory)
 print(f"В папке имеется {len(img_list)} изображений")
 
-delete_files_in_folder('self development dataset/train/images')
-delete_files_in_folder('self development dataset/train/labels')
+delete_files_in_folder(train_images_path + '/train/images')
+delete_files_in_folder(train_images_path + '/train/labels')
 
 for img_name in tqdm(img_list, desc="Detected frame", unit="frame"):
     img_filepath = directory + "\\" + img_name
     # print(img_filepath)
     img = cv2.imread(img_filepath)
-    img = crop_image(img, **frame_crop)
     img_copy = img
 
     # получаем ширину и высоту картинки
@@ -80,7 +83,7 @@ for img_name in tqdm(img_list, desc="Detected frame", unit="frame"):
         annot_lines.append(annotation)
 
     # копируем картинку в папку базы изображений для импорта
-    cv2.imwrite(os.path.join(train_images_path, img_name), img_copy)
+    cv2.imwrite(os.path.join(train_images_path + r"\train\images", img_name), img_copy)
 
     # определить расширение изображения (png или jpg)
     img_extension = os.path.splitext(img_name)[-1].lower()
@@ -88,7 +91,7 @@ for img_name in tqdm(img_list, desc="Detected frame", unit="frame"):
     # записываем файл аннотации в папку базы изображений для импорта
 
     txt_name = img_name.replace(img_extension, ".txt")
-    with open(os.path.join('self development dataset/train/labels', txt_name), 'w') as f:
+    with open(os.path.join(train_images_path + '/train/labels', txt_name), 'w') as f:
         for line in annot_lines:
             f.write(line)
             f.write('\n')

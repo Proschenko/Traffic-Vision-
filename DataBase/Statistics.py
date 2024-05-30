@@ -8,7 +8,8 @@ from datetime import datetime
 
 import matplotlib.pyplot as plt
 
-from DataBase.Redis import Gender, Redis, unix_to_datetime, Action, Filter
+from DataBase.Redis import Action, Filter, Redis, unix_to_datetime
+from Shared.Classes import Gender
 
 
 def get_data(start_date: datetime, end_date: datetime, gender: Gender = None, column="enter") -> list:
@@ -22,7 +23,7 @@ def get_data(start_date: datetime, end_date: datetime, gender: Gender = None, co
 
 
 def amount_in_out(start_date: datetime, end_date: datetime, gender: Gender = None) -> tuple[int, int]:
-    data = Redis().get_hour(start_date, Filter(gender=gender))
+    data = Redis().get_hour(start_date, end_date, Filter(gender=gender))
     print(data)
     data_in = data[Action.Enter].sum(1).iloc[0]
     data_out = data[Action.Exit].sum(1).iloc[0]
